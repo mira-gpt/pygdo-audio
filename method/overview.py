@@ -12,4 +12,3 @@ class overview(MethodForm):
 
     def form_submitted(self):
         return self.msg('%s', 'Yeah!')
-    
