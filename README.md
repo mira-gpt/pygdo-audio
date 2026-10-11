@@ -24,6 +24,35 @@ the same model support shared radio playback now and call/voice routing later.
 An ordinary physical microphone is an input. It is not itself a speaker
 output; a virtual audio device provides the loopback when that is needed.
 
+## PCM interface
+
+`PCMRoute` is the generic, device-independent boundary for raw PCM. It owns a
+single fixed `PCMFormat` and two bounded queues:
+
+```text
+capture adapter -> feed_input() -> read_input() -> STT or other consumer
+TTS or other producer -> write_output() -> read_output() -> playback adapter
+```
+
+`PCMFormat` defines sample rate, channel count, and sample width in bytes.
+`PCMChunk` contains complete PCM frames, its format, and a sequence number.
+The route does not transcode, open an audio device, retain audio after it is
+read, or create a network connection. A platform adapter owns those actions.
+
+## Whisper file helper
+
+`transcribe_file()` transcribes one existing audio file with local Whisper and
+passes one final event to an explicit async emitter:
+
+```text
+$chatstream <channel-id> --lang=de --call=<call-id> --seq=<number> --status=final
+<transcript>
+```
+
+It loads Whisper only when called. The helper does not start a listener,
+select an audio device, record audio, or send the event on its own. The caller
+chooses the emitter that forwards the event into PyGDO.
+
 ## Planned commands
 
 Create one normal PyGDO audio connector server per independent input/output
@@ -75,5 +104,5 @@ the active endpoint for that side of the current audio server.
 4. Keep the backend implementation compatible with PipeWire/PulseAudio and
    `ffmpeg` without assuming a desktop audio session exists.
 
-Telephony, mixing, microphone forwarding and transcription are later,
-separate consumers of the same connector model.
+Telephony, mixing, microphone forwarding and transcription are separate
+consumers of the same PCM boundary.
