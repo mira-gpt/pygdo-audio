@@ -36,6 +36,8 @@ TTS or other producer -> write_output() -> read_output() -> playback adapter
 
 `PCMFormat` defines sample rate, channel count, and sample width in bytes.
 `PCMChunk` contains complete PCM frames, its format, and a sequence number.
+These fields use strict integer and bytes types. A route permits one waiting
+reader for input and one for output, so close can reliably wake each direction.
 The route does not transcode, open an audio device, retain audio after it is
 read, or create a network connection. A platform adapter owns those actions.
 

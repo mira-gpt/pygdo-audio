@@ -11,6 +11,12 @@ class PCMFormat:
     sample_width: int
 
     def __post_init__(self):
+        if type(self.sample_rate) is not int:
+            raise TypeError('PCM sample rate must be an integer.')
+        if type(self.channels) is not int:
+            raise TypeError('PCM channel count must be an integer.')
+        if type(self.sample_width) is not int:
+            raise TypeError('PCM sample width must be an integer.')
         if self.sample_rate < 1:
             raise ValueError('PCM sample rate must be positive.')
         if self.channels < 1:
@@ -34,6 +40,12 @@ class PCMChunk:
     data: bytes
 
     def __post_init__(self):
+        if type(self.pcm_format) is not PCMFormat:
+            raise TypeError('PCM chunk format must be PCMFormat.')
+        if type(self.sequence) is not int:
+            raise TypeError('PCM chunk sequence must be an integer.')
+        if type(self.data) is not bytes:
+            raise TypeError('PCM chunk data must be bytes.')
         if self.sequence < 0:
             raise ValueError('PCM chunk sequence must not be negative.')
         if len(self.data) % self.pcm_format.frame_size:
@@ -51,12 +63,18 @@ class PCMChunk:
 class PCMRoute:
 
     def __init__(self, pcm_format: PCMFormat, capacity: int = 32):
+        if type(pcm_format) is not PCMFormat:
+            raise TypeError('PCM route format must be PCMFormat.')
+        if type(capacity) is not int:
+            raise TypeError('PCM route capacity must be an integer.')
         if capacity < 1:
             raise ValueError('PCM route capacity must be positive.')
         self.pcm_format = pcm_format
         self._input: asyncio.Queue[PCMChunk | None] = asyncio.Queue(capacity)
         self._output: asyncio.Queue[PCMChunk | None] = asyncio.Queue(capacity)
         self._closed = False
+        self._input_reader_active = False
+        self._output_reader_active = False
 
     @property
     def closed(self) -> bool:
@@ -67,14 +85,14 @@ class PCMRoute:
         self._put(self._input, chunk)
 
     async def read_input(self) -> PCMChunk | None:
-        return await self._read(self._input)
+        return await self._read(self._input, '_input_reader_active')
 
     def write_output(self, chunk: PCMChunk) -> None:
         self._validate(chunk)
         self._put(self._output, chunk)
 
     async def read_output(self) -> PCMChunk | None:
-        return await self._read(self._output)
+        return await self._read(self._output, '_output_reader_active')
 
     def close(self) -> None:
         if self._closed:
@@ -94,10 +112,16 @@ class PCMRoute:
         if queue.empty():
             queue.put_nowait(None)
 
-    async def _read(self, queue: asyncio.Queue[PCMChunk | None]) -> PCMChunk | None:
-        if self._closed and queue.empty():
-            return None
-        return await queue.get()
+    async def _read(self, queue: asyncio.Queue[PCMChunk | None], active_name: str) -> PCMChunk | None:
+        if getattr(self, active_name):
+            raise RuntimeError('PCM route allows one reader per direction.')
+        setattr(self, active_name, True)
+        try:
+            if self._closed and queue.empty():
+                return None
+            return await queue.get()
+        finally:
+            setattr(self, active_name, False)
 
     @staticmethod
     def _put(queue: asyncio.Queue[PCMChunk | None], chunk: PCMChunk) -> None:

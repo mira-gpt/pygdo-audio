@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 
 from gdo.audio.pcm import PCMChunk, PCMFormat, PCMRoute
@@ -14,9 +15,17 @@ class PCMFormatTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             PCMFormat(0, 1, 2)
 
+    def test_rejects_non_integer_format_values(self):
+        with self.assertRaises(TypeError):
+            PCMFormat(True, 1, 2)
+
     def test_rejects_incomplete_frames(self):
         with self.assertRaises(ValueError):
             PCMChunk(PCMFormat(16000, 2, 2), 0, b'abc')
+
+    def test_rejects_non_bytes_chunk_data(self):
+        with self.assertRaises(TypeError):
+            PCMChunk(PCMFormat(16000, 1, 2), 0, bytearray(b'\x00\x01'))
 
 
 class PCMRouteTest(unittest.IsolatedAsyncioTestCase):
@@ -56,6 +65,18 @@ class PCMRouteTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(chunk, await route.read_input())
         self.assertIsNone(await route.read_input())
+
+    async def test_rejects_a_second_reader_for_one_direction(self):
+        pcm_format = PCMFormat(16000, 1, 2)
+        route = PCMRoute(pcm_format)
+        reader = asyncio.create_task(route.read_input())
+        await asyncio.sleep(0)
+
+        with self.assertRaises(RuntimeError):
+            await route.read_input()
+
+        route.close()
+        self.assertIsNone(await reader)
 
     async def test_reports_chunk_duration(self):
         chunk = PCMChunk(PCMFormat(16000, 1, 2), 0, b'\x00\x00' * 160)
