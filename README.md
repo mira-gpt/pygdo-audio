@@ -75,6 +75,11 @@ chooses the emitter that forwards the event into PyGDO.
 
 ## Planned commands
 
+`$audio.jingle v8` queues `jingles/v8.mp3` for playback on the configured
+output sink. Jingle files are local and ignored by Git. FFmpeg and access to
+the output's audio session are required.
+`$audio.say <text>` queues local speech using espeak-ng and the same sink.
+
 Create one normal PyGDO audio connector server per independent input/output
 pair:
 
