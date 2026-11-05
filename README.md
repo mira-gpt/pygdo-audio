@@ -133,13 +133,46 @@ the active endpoint for that side of the current audio server.
 Telephony, mixing, microphone forwarding and transcription are separate
 consumers of the same PCM boundary.
 
+## Streaming speech-to-text
+
+A consumer passes a `PCMRoute` input to an STT stream and receives ordered
+transcript events with a stream ID, audio sequence and `partial` or `final`
+status. Backends are replaceable; local Whisper initially produces final
+chunks, not live partial words. Audio remains in memory and is not recorded by
+the STT stream. Capture and delivery are separate, explicit choices.
+The bounded PCM input queue rejects excess chunks with `QueueFull`; sequence gaps are reported
+as `missing_chunks`, including an empty event when a gap precedes silence.
+Whisper expects mono 16 kHz signed 16-bit little-endian PCM and an explicitly
+loaded model. Closing the route drains queued input and ends the stream.
+`capture_pulse()` supplies this PCM from an explicitly selected local source;
+it starts only when called, reports dropped chunks, and stops on cancellation.
+The caller owns the route and is responsible for closing it after capture.
+
+`audio_microphone` defaults to `0`. When set to `1` with an `audio_operator`,
+Dog continuously transcribes the default microphone with local Whisper and
+sends speech to the operator's Bash channel as `$chatstream` events. Speech
+turns are grouped around pauses. Quiet audio is suppressed; a threshold can
+also miss very quiet speech. `audio_transcript_min_letters` defaults to four;
+shorter fragments, including words such as "ja", are not sent. The
+operator is attribution, not speaker verification: anyone near the microphone
+may be interpreted as that user. The listener needs the cached Whisper base
+model and access to the desktop audio session. Setting `audio_microphone` to
+`0` stops capture; no raw audio is stored.
+`$audio.microphone 0` disables it; `$audio.microphone 1` enables it. The
+optional `audio_microphone_session_user` selects another Unix user's audio
+session and requires appropriate non-interactive sudo permission.
+SIP continues to use its own connector and call identities.
+
 ## Discussion
 
 ### ALs → Humans
 
 Mira's text-to-speech should consistently use her voice across audio, video,
 and future SIP integrations. The current local voice prototype uses
-`espeak-ng` with `en-us+f3`; other speech paths are not yet unified (TODO).
+`espeak-ng` by default; the optional `piper` backend uses separately configured
+Piper executable and language-specific ONNX model paths. Other speech paths
+are not yet unified (TODO). Piper and each voice have their own licensing;
+verify the selected model before distribution.
 
 Set `audio_output_device` to the intended PulseAudio/PipeWire sink, then use:
 
@@ -147,7 +180,12 @@ Set `audio_output_device` to the intended PulseAudio/PipeWire sink, then use:
 pygdotest '$spk "Hello from Mira!"'
 ```
 
-This queues speech to Test Dog, which needs FFmpeg, espeak-ng, and access to
-the sink's audio session. Queued does not mean playback succeeded. The current
-prototype uses an English voice; language selection is TODO. Select destinations
-carefully before speaking in a shared stream or call.
+This queues speech to Test Dog, which needs paplay, the selected speech backend,
+and access to
+the sink's audio session. Queued does not mean playback succeeded.
+`$audio.language de` selects German microphone transcription; `en` selects
+English. This microphone setting is module-wide and defaults to English. For
+speech, pass the routed chat event's language explicitly, for example
+`pygdotest '$spk --lang=de "Hallo!"'`; otherwise the calling GDO channel's
+language is used. Select destinations carefully before
+speaking in a shared stream or call.

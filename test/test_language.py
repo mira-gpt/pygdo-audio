@@ -1,0 +1,26 @@
+import unittest
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from gdo.audio.language import VOICES
+from gdo.audio.method.language import language
+from gdo.base.Application import Application
+from gdo.base.Render import Mode
+
+
+class LanguageTest(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        Application.mode(Mode.render_cli)
+
+    async def test_command_saves_language(self):
+        method = language()
+        method.param_val = MagicMock(return_value='de')
+        method.reply = MagicMock()
+        module = MagicMock()
+        module.save_config_val = AsyncMock()
+        with patch('gdo.audio.method.language.module_audio.instance', return_value=module):
+            await method.gdo_execute()
+        module.save_config_val.assert_awaited_once_with('audio_microphone_language', 'de')
+        self.assertEqual('owner', method.gdo_user_permission())
+
+    def test_voice_languages(self):
+        self.assertEqual('de+f3', VOICES['de'])

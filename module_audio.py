@@ -4,6 +4,10 @@ from gdo.base.GDO_Module import GDO_Module
 from gdo.base.GDO import GDO
 from gdo.base.GDT import GDT
 from gdo.core.GDT_String import GDT_String
+from gdo.core.GDT_User import GDT_User
+from gdo.core.GDT_Bool import GDT_Bool
+from gdo.core.GDT_Enum import GDT_Enum
+from gdo.core.GDT_UInt import GDT_UInt
 from gdo.ui.GDT_Link import GDT_Link
 
 from typing import TYPE_CHECKING
@@ -23,10 +27,22 @@ class module_audio(GDO_Module):
     def gdo_module_config(self) -> list[GDT]:
         return [
             GDT_String('audio_output_device').maxlen(255).tooltip('tt_audio_output_device'),
+            GDT_Enum('audio_tts_backend').choices({'espeak': 'eSpeak NG', 'piper': 'Piper'}).not_null().initial('espeak').tooltip('tt_audio_tts_backend'),
+            GDT_String('audio_piper_binary').maxlen(512).tooltip('tt_audio_piper_binary'),
+            GDT_String('audio_piper_model_de').maxlen(512).tooltip('tt_audio_piper_model_de'),
+            GDT_String('audio_piper_model_en').maxlen(512).tooltip('tt_audio_piper_model_en'),
+            GDT_User('audio_operator').tooltip('tt_audio_operator'),
+            GDT_Bool('audio_microphone').not_null().initial('0').tooltip('tt_audio_microphone'),
+            GDT_String('audio_microphone_session_user').ascii().maxlen(32).tooltip('tt_audio_microphone_session_user'),
+            GDT_Enum('audio_microphone_language').choices({'en': 'English', 'de': 'Deutsch'}).not_null().initial('en').tooltip('tt_audio_language'),
+            GDT_UInt('audio_transcript_min_letters').min(0).max(50).not_null().initial('4').tooltip('tt_audio_transcript_min_letters'),
         ]
 
     def cfg_output_device(self) -> str | None:
         return self.get_config_val('audio_output_device') or None
+
+    def cfg_audio_operator(self):
+        return self.get_config_value('audio_operator')
 
     def gdo_user_config(self) -> list[GDT]:
         return []
@@ -35,7 +51,15 @@ class module_audio(GDO_Module):
         return []
 
     def gdo_init(self):
-        pass
+        from gdo.audio.microphone import MicrophoneController
+        self.microphone = MicrophoneController(self)
+
+    def gdo_subscribe_events(self):
+        from gdo.base.Application import Application
+        Application.EVENTS.add_timer_async(2, self.microphone_timer, Application.EVENTS.FOREVER)
+
+    async def microphone_timer(self):
+        await self.microphone.reconcile()
 
     def gdo_load_scripts(self, page: 'GDT_Page'):
         self.add_js('js/pygdo-audio.js')

@@ -14,18 +14,18 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
     def test_command_queues_text(self):
         method = say()
         self.assertEqual('spk', method.gdo_trig())
-        method.param_val = MagicMock(return_value='Quack!')
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'Quack!', 'lang': 'de'}[key])
         method.reply = MagicMock(return_value='queued')
         db = MagicMock()
         db.is_in_transaction.return_value = False
         with patch.object(Application, 'db', return_value=db), \
                 patch('gdo.audio.method.say.IPC.send_to_dog') as send:
             self.assertEqual(method.gdo_execute(), 'queued')
-        send.assert_called_once_with('audio.ipc_say', ['Quack!'])
+        send.assert_called_once_with('audio.ipc_say', ['Quack!', 'de'])
 
     async def test_voice_is_piped_to_configured_output(self):
         method = ipc_say()
-        method.param_val = MagicMock(return_value='Quack!')
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'Quack!', 'lang': 'de'}[key])
         method.empty = MagicMock()
         voice, player = MagicMock(), MagicMock()
         voice.communicate = AsyncMock(return_value=(b'wav', b''))
@@ -33,6 +33,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         voice.returncode = player.returncode = 0
         module = MagicMock()
         module.cfg_output_device.return_value = 'mira_effects'
+        module.get_config_val.return_value = 'espeak'
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
                 patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]) as spawn:
@@ -40,4 +41,26 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         voice.communicate.assert_awaited_once_with(b'Quack!')
         player.communicate.assert_awaited_once_with(b'wav')
         args = spawn.call_args_list[1].args
-        self.assertEqual(args[args.index('-device') + 1], 'mira_effects')
+        self.assertEqual(args[0], 'paplay')
+        self.assertEqual(args[args.index('--device') + 1], 'mira_effects')
+        self.assertIn('de+f3', spawn.call_args_list[0].args)
+
+    async def test_piper_uses_configured_language_model(self):
+        method = ipc_say()
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'Hallo!', 'lang': 'de'}[key])
+        method.empty = MagicMock()
+        voice, player = MagicMock(), MagicMock()
+        voice.communicate = AsyncMock(return_value=(b'wav', b''))
+        player.communicate = AsyncMock(return_value=(None, None))
+        voice.returncode = player.returncode = 0
+        module = MagicMock()
+        module.cfg_output_device.return_value = 'mira_effects'
+        module.get_config_val.side_effect = lambda key: {
+            'audio_tts_backend': 'piper', 'audio_piper_binary': '/opt/piper',
+            'audio_piper_model_de': '/opt/de.onnx'}[key]
+        with patch.object(Application, 'IS_DOG', True), \
+                patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
+                patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]) as spawn:
+            await method.gdo_execute()
+        self.assertEqual(('/opt/piper', '--model', '/opt/de.onnx', '--output-file', '-'), spawn.call_args_list[0].args)
+        player.communicate.assert_awaited_once_with(b'wav')
