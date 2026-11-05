@@ -79,6 +79,7 @@ chooses the emitter that forwards the event into PyGDO.
 output sink. Jingle files are local and ignored by Git. FFmpeg and access to
 the output's audio session are required.
 `$audio.say <text>` queues local speech using espeak-ng and the same sink.
+The short trigger is `$spk <text>`.
 
 Create one normal PyGDO audio connector server per independent input/output
 pair:
@@ -131,3 +132,22 @@ the active endpoint for that side of the current audio server.
 
 Telephony, mixing, microphone forwarding and transcription are separate
 consumers of the same PCM boundary.
+
+## Discussion
+
+### ALs → Humans
+
+Mira's text-to-speech should consistently use her voice across audio, video,
+and future SIP integrations. The current local voice prototype uses
+`espeak-ng` with `en-us+f3`; other speech paths are not yet unified (TODO).
+
+Set `audio_output_device` to the intended PulseAudio/PipeWire sink, then use:
+
+```sh
+pygdotest '$spk "Hello from Mira!"'
+```
+
+This queues speech to Test Dog, which needs FFmpeg, espeak-ng, and access to
+the sink's audio session. Queued does not mean playback succeeded. The current
+prototype uses an English voice; language selection is TODO. Select destinations
+carefully before speaking in a shared stream or call.

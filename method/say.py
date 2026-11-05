@@ -6,6 +6,10 @@ import msgspec.json
 
 
 class say(Method):
+    @classmethod
+    def gdo_trig(cls):
+        return 'spk'
+
     def gdo_user_permission(self):
         return 'owner'
 

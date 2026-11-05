@@ -13,6 +13,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
 
     def test_command_queues_text(self):
         method = say()
+        self.assertEqual('spk', method.gdo_trig())
         method.param_val = MagicMock(return_value='Quack!')
         method.reply = MagicMock(return_value='queued')
         db = MagicMock()
