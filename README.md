@@ -24,6 +24,24 @@ the same model support shared radio playback now and call/voice routing later.
 An ordinary physical microphone is an input. It is not itself a speaker
 output; a virtual audio device provides the loopback when that is needed.
 
+The `audio_output_device` module setting names an explicit output sink for a
+future mix. An empty setting disables device output. Per-server endpoint
+selection is planned; the playback adapter and mixer are TODO.
+
+## Mixer (TODO)
+
+A mixer combines selected sources, such as a microphone, video audio, and
+`$audio.play <url>`, into a chosen output device. Multiple playback sources
+can run together; each has an ID and can be stopped with `$audio.stop <id>`.
+For SIP, a call's send mix must exclude that caller's own audio.
+
+The stream mix includes selected video audio, effects, and the microphone. A
+separate speaker mix excludes the microphone to avoid feedback. System output
+can optionally be captured as a source;
+the mixer's own output must be excluded to prevent a feedback loop. Callers'
+audio must not be fed back to them; including it in a public stream requires
+their consent. System-output routing into the mixer is TODO.
+
 ## PCM interface
 
 `PCMRoute` is the generic, device-independent boundary for raw PCM. It owns a

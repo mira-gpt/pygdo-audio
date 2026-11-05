@@ -1,4 +1,6 @@
 module_audio = "Audio"
+cfg_audio_output_device = "Audio output device"
+tt_audio_output_device = "Explicit output sink name for the audio mix, such as a PipeWire virtual sink or speakers. Empty disables device output; selecting a device does not start playback."
 
 mt_audio_overview = "audios"
 md_audio_overview = "Overview of audio"

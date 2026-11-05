@@ -3,6 +3,7 @@ from __future__ import annotations
 from gdo.base.GDO_Module import GDO_Module
 from gdo.base.GDO import GDO
 from gdo.base.GDT import GDT
+from gdo.core.GDT_String import GDT_String
 from gdo.ui.GDT_Link import GDT_Link
 
 from typing import TYPE_CHECKING
@@ -20,7 +21,12 @@ class module_audio(GDO_Module):
         pass
 
     def gdo_module_config(self) -> list[GDT]:
-        return []
+        return [
+            GDT_String('audio_output_device').maxlen(255).tooltip('tt_audio_output_device'),
+        ]
+
+    def cfg_output_device(self) -> str | None:
+        return self.get_config_val('audio_output_device') or None
 
     def gdo_user_config(self) -> list[GDT]:
         return []
