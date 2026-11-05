@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import os
-import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -17,12 +16,10 @@ from gdo.base.Application import Application
 from gdo.base.Logger import Logger
 
 
-def microphone_event(channel_id: int, user_id: str, language: str, event, trigger: str = '$') -> str:
+def microphone_event(channel_id: int, user_id: str, language: str, event) -> str:
     if not str(user_id).isdecimal() or int(user_id) < 1:
         raise ValueError('Audio operator must have a valid user ID.')
     text = ' '.join(event.text.replace('\x00', '').split())
-    if len(trigger) == 1:
-        text = re.sub(r'^computer\b[\s,:;.!?]+(?=\S)', lambda _: trigger, text, count=1, flags=re.IGNORECASE)
     header, _, body = render_chatstream(channel_id, event.stream_id, event.sequence, language, text).partition('\n')
     return f'{header} --user={user_id}\n{body}'
 
@@ -64,7 +61,7 @@ async def run_microphone(operator, channel, session_user: str | None = None,
         if event.missing_chunks:
             Logger.warning(f'Microphone transcription dropped {event.missing_chunks} audio chunks.')
         if sum(character.isalpha() for character in event.text) >= min_letters and event.text:
-            await Application.EVENTS.publish('audio_chatstream', microphone_event(channel_id, user_id, language, event, channel.get_trigger()))
+            await Application.EVENTS.publish('audio_chatstream', microphone_event(channel_id, user_id, language, event))
 
     MicrophoneMeter.state('unknown')
     capture = asyncio.create_task(capture_pulse(capture_route, source, chunk_seconds=0.2, session_user=session_user, on_audio=MicrophoneMeter.update))

@@ -16,11 +16,11 @@ class MicrophoneTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             microphone_event(12, 'invalid', 'en', event)
 
-    def test_computer_prefix_becomes_channel_trigger_only_at_start(self):
+    def test_computer_prefix_remains_plain_text(self):
         event = TranscriptEvent('microphone-abc', 3, 'final', 'Computer, mach den Vintage Effekt an')
-        self.assertTrue(microphone_event(12, '42', 'de', event, '.').endswith('\n.mach den Vintage Effekt an'))
+        self.assertTrue(microphone_event(12, '42', 'de', event).endswith('\nComputer, mach den Vintage Effekt an'))
         event = TranscriptEvent('microphone-abc', 4, 'final', 'Mein Computer ist an')
-        self.assertTrue(microphone_event(12, '42', 'de', event, '.').endswith('\nMein Computer ist an'))
+        self.assertTrue(microphone_event(12, '42', 'de', event).endswith('\nMein Computer ist an'))
 
     async def test_non_dog_never_checks_or_starts_microphone(self):
         controller = MicrophoneController(MagicMock())
