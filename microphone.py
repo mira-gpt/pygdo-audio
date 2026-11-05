@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from gdo.audio.capture import capture_pulse
+from gdo.audio.meter import MicrophoneMeter
 from gdo.audio.pcm import PCMRoute
 from gdo.audio.session import audio_session_command
 from gdo.audio.stt import SilenceGate, STTStream, WhisperPCMBackend
@@ -65,7 +66,8 @@ async def run_microphone(operator, channel, session_user: str | None = None,
         if sum(character.isalpha() for character in event.text) >= min_letters and event.text:
             await Application.EVENTS.publish('audio_chatstream', microphone_event(channel_id, user_id, language, event, channel.get_trigger()))
 
-    capture = asyncio.create_task(capture_pulse(capture_route, source, chunk_seconds=1, session_user=session_user))
+    MicrophoneMeter.state('unknown')
+    capture = asyncio.create_task(capture_pulse(capture_route, source, chunk_seconds=0.2, session_user=session_user, on_audio=MicrophoneMeter.update))
     segments = asyncio.create_task(segment_speech(capture_route, speech_route))
     transcription = asyncio.create_task(STTStream(stream_id, backend).run(speech_route, emit))
     Logger.debug('Microphone transcription started.')
@@ -85,6 +87,7 @@ async def run_microphone(operator, channel, session_user: str | None = None,
             await transcription
             raise RuntimeError('Microphone transcription stopped unexpectedly.')
     finally:
+        MicrophoneMeter.state('unknown')
         for task in (capture, segments, transcription):
             if not task.done():
                 task.cancel()
@@ -141,6 +144,7 @@ class MicrophoneController:
             enabled, operator_id, session_user, language, min_letters = settings
             if not enabled:
                 await self.stop()
+                MicrophoneMeter.state('off')
                 self.failed_setting = None
                 return
             if self.task and self.task.done():

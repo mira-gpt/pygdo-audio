@@ -17,15 +17,16 @@ class CaptureStats:
 
 
 async def capture_pulse(route: PCMRoute, source: str, chunk_seconds: int = 4,
-                        session_user: str | None = None) -> CaptureStats:
+                        session_user: str | None = None, on_audio=None) -> CaptureStats:
     """Capture an explicitly selected PulseAudio source until EOF or cancellation."""
     if not source or source == 'default':
         raise ValueError('An explicit microphone source is required.')
     if route.pcm_format != WhisperPCMBackend.FORMAT:
         raise ValueError('Capture currently requires 16 kHz mono 16-bit PCM.')
-    if type(chunk_seconds) is not int or not 1 <= chunk_seconds <= 30:
-        raise ValueError('Chunk duration must be 1–30 seconds.')
-    size = route.pcm_format.bytes_per_second * chunk_seconds
+    if type(chunk_seconds) not in (int, float) or not 0.1 <= chunk_seconds <= 30:
+        raise ValueError('Chunk duration must be 0.1–30 seconds.')
+    size = int(route.pcm_format.bytes_per_second * chunk_seconds)
+    size -= size % route.pcm_format.frame_size
     command = audio_session_command([
         'ffmpeg', '-nostdin', '-hide_banner', '-loglevel', 'error',
         '-f', 'pulse', '-i', source, '-ac', '1', '-ar', '16000',
@@ -42,12 +43,16 @@ async def capture_pulse(route: PCMRoute, source: str, chunk_seconds: int = 4,
                 data = error.partial
                 data = data[:len(data) - len(data) % route.pcm_format.frame_size]
                 if data:
+                    if on_audio:
+                        on_audio(data)
                     try:
                         route.feed_input(PCMChunk(route.pcm_format, sequence, data))
                     except asyncio.QueueFull:
                         dropped += 1
                     sequence += 1
                 break
+            if on_audio:
+                on_audio(data)
             try:
                 route.feed_input(PCMChunk(route.pcm_format, sequence, data))
             except asyncio.QueueFull:
