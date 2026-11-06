@@ -64,6 +64,7 @@ async def run_microphone(operator, channel, session_user: str | None = None,
     diagnostics.mark('ready', force=True, state='listening', language=language)
 
     async def emit(event):
+        MicrophoneMeter.set_transcription_text(event.text)
         Recorder.stop_if_requested(event.text)
         if event.missing_chunks:
             Logger.warning(f'Microphone transcription dropped {event.missing_chunks} audio chunks.')
@@ -83,6 +84,7 @@ async def run_microphone(operator, channel, session_user: str | None = None,
     segments = asyncio.create_task(segment_speech(capture_route, speech_route,
                                    on_segment=lambda: diagnostics.mark('segments', count=True, force=True)))
     transcription = asyncio.create_task(STTStream(stream_id, backend).run(speech_route, emit))
+    MicrophoneMeter.transcription_state('on')
     Logger.debug('Microphone transcription started.')
     try:
         done, _ = await asyncio.wait((capture, segments, transcription), return_when=asyncio.FIRST_COMPLETED)
@@ -100,6 +102,7 @@ async def run_microphone(operator, channel, session_user: str | None = None,
             await transcription
             raise RuntimeError('Microphone transcription stopped unexpectedly.')
     finally:
+        MicrophoneMeter.transcription_state('unknown')
         diagnostics.mark('stopped', force=True, state='stopped')
         Recorder.stop()
         MicrophoneMeter.state('unknown')
@@ -157,11 +160,17 @@ class MicrophoneController:
         try:
             settings = self.settings()
             enabled, operator_id, session_user, language, min_letters = settings
+            from gdo.audio.meter_only import MeterOnly
+            meter_only = getattr(self.module, 'meter_only', None)
             if not enabled:
                 await self.stop()
-                MicrophoneMeter.state('off')
+                MicrophoneMeter.transcription_state('off')
+                if not isinstance(meter_only, MeterOnly) or not meter_only.running():
+                    MicrophoneMeter.state('off')
                 self.failed_setting = None
                 return
+            if isinstance(meter_only, MeterOnly) and meter_only.running():
+                await meter_only.stop()
             if self.task and self.task.done():
                 try:
                     self.task.result()
@@ -172,6 +181,7 @@ class MicrophoneController:
                     Logger.warning(f'Microphone transcription failed: {error}')
                 self.failed_setting = self.active_settings
                 await self.stop()
+                MicrophoneMeter.transcription_state('error')
             if self.task and settings != self.active_settings:
                 await self.stop()
             if self.task or self.failed_setting == settings:
@@ -192,8 +202,10 @@ class MicrophoneController:
             self.active_operator = operator_id
             self.active_session_user = session_user
             self.active_settings = settings
+            MicrophoneMeter.transcription_state('starting')
             self.task = asyncio.create_task(run_microphone(operator, channel, session_user, language, min_letters))
         except Exception as error:
             await self.stop()
+            MicrophoneMeter.transcription_state('error')
             self.failed_setting = locals().get('settings')
             Logger.warning(f'Microphone configuration failed: {error}')

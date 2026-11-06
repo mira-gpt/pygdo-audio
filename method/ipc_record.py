@@ -1,4 +1,5 @@
 from gdo.audio.recording import Recorder
+from gdo.audio.module_audio import module_audio
 from gdo.base.Application import Application
 from gdo.base.Logger import Logger
 from gdo.base.Method import Method
@@ -17,6 +18,9 @@ class ipc_record(Method):
         if Application.IS_DOG:
             try:
                 if self.param_val('action') == 'start':
+                    listener = module_audio.instance().microphone.task
+                    if not listener or listener.done():
+                        raise RuntimeError('The transcription microphone listener must be running to record')
                     Recorder.start()
                     Logger.message('Microphone recording started; maximum 30 seconds.')
                 else:

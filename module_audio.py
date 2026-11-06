@@ -52,7 +52,9 @@ class module_audio(GDO_Module):
 
     def gdo_init(self):
         from gdo.audio.microphone import MicrophoneController
+        from gdo.audio.meter_only import MeterOnly
         self.microphone = MicrophoneController(self)
+        self.meter_only = MeterOnly(self)
 
     def gdo_subscribe_events(self):
         from gdo.base.Application import Application

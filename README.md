@@ -44,6 +44,12 @@ their consent. System-output routing into the mixer is TODO.
 
 ## PCM interface
 
+`$audio.meter 1` starts an explicit microphone-level monitor without speech
+recognition, recording, or chatstream events; `$audio.meter 0` stops it. It
+requires the transcription listener to be off and captures the default input
+only to calculate the live level. This does not confirm that a call participant
+hears you; check the communication application's input and mute settings.
+
 `PCMRoute` is the generic, device-independent boundary for raw PCM. It owns a
 single fixed `PCMFormat` and two bounded queues:
 

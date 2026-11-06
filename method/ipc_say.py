@@ -1,4 +1,5 @@
 import asyncio
+from uuid import uuid4
 
 from gdo.audio.module_audio import module_audio
 from gdo.audio.language import VOICES
@@ -19,6 +20,8 @@ class ipc_say(Method):
 
     async def gdo_execute(self):
         if Application.IS_DOG:
+            speech_id = uuid4().hex
+            started = False
             try:
                 module = module_audio.instance()
                 target = module.cfg_output_device()
@@ -49,9 +52,22 @@ class ipc_say(Method):
                     'paplay', '--device', target, '--stream-name', 'mira-voice',
                     stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.DEVNULL,
                     stderr=asyncio.subprocess.DEVNULL)
+                events = getattr(Application, 'EVENTS', None)
+                if events:
+                    try:
+                        await events.publish('audio_speech_start', speech_id, self.param_val('text'))
+                        started = True
+                    except Exception as error:
+                        Logger.warning(f'Speech display event failed: {type(error).__name__}')
                 await player.communicate(wav)
                 if player.returncode:
                     raise RuntimeError('Speech playback failed')
             except (ValueError, OSError, RuntimeError) as exc:
                 Logger.warning(f'Audio speech failed: {exc}')
+            finally:
+                if started:
+                    try:
+                        await events.publish('audio_speech_end', speech_id)
+                    except Exception as error:
+                        Logger.warning(f'Speech display event failed: {type(error).__name__}')
         return self.empty()

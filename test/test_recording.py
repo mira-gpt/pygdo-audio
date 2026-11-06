@@ -54,7 +54,10 @@ class RecordingTest(unittest.TestCase):
         method = ipc_record()
         method.param_val = MagicMock(return_value='start')
         method.empty = MagicMock()
+        module = MagicMock()
+        module.microphone.task.done.return_value = False
         with patch.object(Application, 'IS_DOG', True), \
+                patch('gdo.audio.method.ipc_record.module_audio.instance', return_value=module), \
                 patch('gdo.audio.method.ipc_record.Recorder.start') as start, \
                 patch('gdo.audio.method.ipc_record.Logger.message'):
             method.gdo_execute()
