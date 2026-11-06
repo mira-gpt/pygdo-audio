@@ -23,6 +23,7 @@ class ipc_say(Method):
         if Application.IS_DOG:
             speech_id = uuid4().hex
             started = False
+            process = None
             try:
                 module = module_audio.instance()
                 target = module.cfg_output_device()
@@ -46,13 +47,16 @@ class ipc_say(Method):
                     *command,
                     stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.DEVNULL)
+                process = voice
                 wav, _ = await voice.communicate(self.param_val('text').encode('utf-8'))
+                process = None
                 if voice.returncode:
                     raise RuntimeError('Speech synthesis failed')
                 player = await asyncio.create_subprocess_exec(
                     'paplay', '--device', target, '--stream-name', 'mira-voice',
                     stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.DEVNULL,
                     stderr=asyncio.subprocess.DEVNULL)
+                process = player
                 events = getattr(Application, 'EVENTS', None)
                 if events:
                     try:
@@ -64,11 +68,18 @@ class ipc_say(Method):
                     except Exception as error:
                         Logger.warning(f'Speech display event failed: {type(error).__name__}')
                 await player.communicate(wav)
+                process = None
                 if player.returncode:
                     raise RuntimeError('Speech playback failed')
             except (ValueError, OSError, RuntimeError) as exc:
                 Logger.warning(f'Audio speech failed: {exc}')
             finally:
+                if process is not None and process.returncode is None:
+                    try:
+                        process.terminate()
+                        await process.wait()
+                    except ProcessLookupError:
+                        pass
                 if started:
                     try:
                         await events.publish('audio_speech_end', speech_id)
