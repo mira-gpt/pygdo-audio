@@ -25,8 +25,75 @@ An ordinary physical microphone is an input. It is not itself a speaker
 output; a virtual audio device provides the loopback when that is needed.
 
 The `audio_output_device` module setting names an explicit output sink for a
-future mix. An empty setting disables device output. Per-server endpoint
-selection is planned; the playback adapter and mixer are TODO.
+speech/effect output. An empty setting disables device output. Per-server
+endpoint selection and a full programmable mixer remain planned.
+
+## Install and test a virtual microphone (Linux)
+
+Work in the intended PyGDO instance and desktop user's audio session; commands
+below are examples, not automatic system changes. `provide` fetches modules;
+installation is separate. Confirm the provider URLs and checked-out branches:
+the tested audio code is `mira-gpt/pygdo-audio` branch `feature/pcm-io`, not
+necessarily the branch selected by the local provider catalog. Do not switch
+branches in a dirty checkout. On an isolated Test Dog configuration, for example:
+
+```sh
+./gdo_adm.sh provide audio,video
+git -C gdo/audio status -sb
+git -C gdo/audio log -1 --oneline
+# Select feature/pcm-io only in a clean, intentionally isolated checkout.
+python3 gdoadm.py --config protected/pygdo_tes.toml install audio
+python3 gdoadm.py --config protected/pygdo_tes.toml install video
+```
+
+Use the normal installation workflow and configuration for other instances;
+never install into production by accident. Install the Python dependencies in
+the Dog interpreter from `gdo/audio/requirements.txt`; system FFmpeg,
+`paplay` (PulseAudio utilities), and `espeak-ng` or configured Piper/model
+files are separate. Local Whisper requires its own model and resources.
+
+PipeWire's PulseAudio server or PulseAudio must be running in the desktop
+user's session. First inspect devices and existing modules; don't duplicate
+them, change the system default, or run `pactl` in the wrong Unix user's session:
+
+```sh
+pactl info
+pactl list short sinks
+pactl list short sources
+pactl list short modules
+```
+
+For a temporary, isolated test, **only if these names don't already exist**:
+
+```sh
+pactl load-module module-null-sink sink_name=mira_stream sink_properties=device.description=Mira_Stream
+pactl load-module module-remap-source master=mira_stream.monitor source_name=mira_virtual_mic source_properties=device.description=Mira_Virtual_Microphone
+pactl list short sinks
+pactl list short sources
+```
+
+Record the returned module IDs. These modules are session-scoped and may need
+recreation after logout/restart; configure persistence separately for the audio
+server in use. To remove only modules you created for this test, unload the
+remap source first, then its sink with `pactl unload-module <module-id>`; do
+not unload other users' modules. See [PipeWire's PulseAudio module docs](https://pipewire.pages.freedesktop.org/pipewire/page_pulse_modules.html).
+
+Set Test Dog's `audio_output_device` to the **sink name** `mira_stream`
+(not the microphone source), using its admin configuration, then queue a
+short test:
+
+```sh
+pygdotest '$admin.conf audio audio_output_device mira_stream'
+pygdotest '$spk --lang=en Test from Mira'
+```
+
+Select `Mira_Virtual_Microphone` in the receiving application's input settings
+and use its own meter or a consenting listener to verify audio. A queued
+response does not prove it was heard. This simple path routes generated audio;
+it does **not** automatically add a physical microphone or system audio, nor
+provide echo cancellation. Avoid routing the virtual sink's monitor back to
+itself. Add monitoring/mixing only deliberately, and obtain participant consent
+before recording or broadcasting. Stop or disable destinations when finished.
 
 ## Mixer (TODO)
 
