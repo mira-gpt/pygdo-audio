@@ -3,7 +3,7 @@ from gdo.base.IPC import IPC
 from gdo.base.Method import Method
 from gdo.core.GDT_RestOfText import GDT_RestOfText
 from gdo.core.GDT_Enum import GDT_Enum
-from gdo.audio.language import VOICES
+from gdo.audio.language import VOICES, speech_language
 import msgspec.json
 
 
@@ -21,9 +21,7 @@ class say(Method):
 
     def gdo_execute(self):
         try:
-            channel = getattr(self, '_env_channel', None)
-            server = getattr(self, '_env_server', None)
-            language = self.param_val('lang') or (channel.get_lang_iso() if channel else server.get_lang_iso() if server else 'en')
+            language = speech_language(self, self.param_val('lang'))
             if language not in VOICES:
                 raise ValueError('Unsupported speech language; choose --lang=en or --lang=de')
             text = self.param_val('text')
