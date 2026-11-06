@@ -66,7 +66,7 @@ class SpeechTurns:
         return self._flush()
 
 
-async def segment_speech(source: PCMRoute, destination: PCMRoute):
+async def segment_speech(source: PCMRoute, destination: PCMRoute, on_segment=None):
     if source.pcm_format != destination.pcm_format:
         raise ValueError('Speech routes must use the same PCM format.')
     segmenter = SpeechTurns()
@@ -77,6 +77,8 @@ async def segment_speech(source: PCMRoute, destination: PCMRoute):
         nonlocal sequence
         try:
             destination.feed_input(PCMChunk(destination.pcm_format, sequence, data))
+            if on_segment:
+                on_segment()
         except asyncio.QueueFull:
             Logger.warning('Microphone transcription queue is full; a speech turn was dropped.')
         sequence += 1

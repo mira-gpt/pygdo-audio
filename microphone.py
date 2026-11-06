@@ -7,9 +7,11 @@ from uuid import uuid4
 
 from gdo.audio.capture import capture_pulse
 from gdo.audio.meter import MicrophoneMeter
+from gdo.audio.recording import Recorder
+from gdo.audio.diagnostics import MicrophoneDiagnostics, TimedSTT
 from gdo.audio.pcm import PCMRoute
 from gdo.audio.session import audio_session_command
-from gdo.audio.stt import SilenceGate, STTStream, WhisperPCMBackend
+from gdo.audio.stt import STTStream, WhisperPCMBackend
 from gdo.audio.turns import segment_speech
 from gdo.audio.whisper import render_chatstream
 from gdo.base.Application import Application
@@ -55,17 +57,31 @@ async def run_microphone(operator, channel, session_user: str | None = None,
     source = await default_microphone(session_user)
     capture_route = PCMRoute(WhisperPCMBackend.FORMAT, capacity=8)
     speech_route = PCMRoute(WhisperPCMBackend.FORMAT, capacity=4)
-    backend = SilenceGate(WhisperPCMBackend(model, language=language))
+    diagnostics = MicrophoneDiagnostics()
+    # SpeechTurns already rejects silent frames. A second whole-segment RMS
+    # gate wrongly rejects quiet speech diluted by the trailing silence.
+    backend = TimedSTT(WhisperPCMBackend(model, language=language, normalize=True), diagnostics)
+    diagnostics.mark('ready', force=True, state='listening', language=language)
 
     async def emit(event):
+        Recorder.stop_if_requested(event.text)
         if event.missing_chunks:
             Logger.warning(f'Microphone transcription dropped {event.missing_chunks} audio chunks.')
         if sum(character.isalpha() for character in event.text) >= min_letters and event.text:
             await Application.EVENTS.publish('audio_chatstream', microphone_event(channel_id, user_id, language, event))
+            diagnostics.mark('delivered', count=True, force=True)
+        else:
+            diagnostics.mark('filtered_results', count=True, force=True)
 
     MicrophoneMeter.state('unknown')
-    capture = asyncio.create_task(capture_pulse(capture_route, source, chunk_seconds=0.2, session_user=session_user, on_audio=MicrophoneMeter.update))
-    segments = asyncio.create_task(segment_speech(capture_route, speech_route))
+    def on_audio(data):
+        MicrophoneMeter.update(data)
+        Recorder.feed(data)
+        diagnostics.mark('capture_chunks', count=True)
+
+    capture = asyncio.create_task(capture_pulse(capture_route, source, chunk_seconds=0.2, session_user=session_user, on_audio=on_audio))
+    segments = asyncio.create_task(segment_speech(capture_route, speech_route,
+                                   on_segment=lambda: diagnostics.mark('segments', count=True, force=True)))
     transcription = asyncio.create_task(STTStream(stream_id, backend).run(speech_route, emit))
     Logger.debug('Microphone transcription started.')
     try:
@@ -84,6 +100,8 @@ async def run_microphone(operator, channel, session_user: str | None = None,
             await transcription
             raise RuntimeError('Microphone transcription stopped unexpectedly.')
     finally:
+        diagnostics.mark('stopped', force=True, state='stopped')
+        Recorder.stop()
         MicrophoneMeter.state('unknown')
         for task in (capture, segments, transcription):
             if not task.done():

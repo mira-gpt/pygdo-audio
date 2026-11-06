@@ -92,6 +92,29 @@ class MicrophoneTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn('$chatstream 12 --lang=en', message[1])
         self.assertIn('--user=42\nHello Mira', message[1])
 
+    async def test_quiet_speech_with_trailing_silence_reaches_whisper(self):
+        operator, channel = MagicMock(), MagicMock()
+        operator.get_id.return_value = '42'
+        channel.get_id.return_value = '12'
+        model = MagicMock()
+        model.transcribe.return_value = {'text': 'Mikrofon Test'}
+        async def fake_capture(route, _source, **_kwargs):
+            # Speech RMS exceeds 0.003, but the whole segment RMS does not.
+            route.feed_input(PCMChunk(route.pcm_format, 0, b'\x64\x00' * 3200 + b'\0\0' * 19200))
+            from gdo.audio.capture import CaptureStats
+            return CaptureStats(1, 0)
+        events = MagicMock()
+        events._subscribers = {'audio_chatstream': [object()]}
+        events.publish = AsyncMock()
+        with patch('gdo.audio.microphone.load_local_whisper', return_value=model), \
+                patch('gdo.audio.microphone.default_microphone', new_callable=AsyncMock, return_value='test-source'), \
+                patch('gdo.audio.microphone.capture_pulse', side_effect=fake_capture), \
+                patch('gdo.audio.microphone.Logger.debug'), \
+                patch('gdo.audio.microphone.Application.EVENTS', events, create=True):
+            await run_microphone(operator, channel)
+        model.transcribe.assert_called_once()
+        self.assertIn('Mikrofon Test', events.publish.await_args.args[1])
+
     async def test_silent_audio_never_produces_a_chatstream_message(self):
         operator = MagicMock()
         operator.get_id.return_value = '42'

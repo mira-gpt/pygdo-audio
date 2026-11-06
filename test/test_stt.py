@@ -77,3 +77,14 @@ class STTStreamTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual('en', model.transcribe.call_args.kwargs['language'])
         with self.assertRaisesRegex(ValueError, '16 kHz'):
             await backend.transcribe(PCMChunk(PCMFormat(48000, 1, 2), 0, b'\0\0'))
+
+    async def test_optional_normalization_amplifies_quiet_input_without_clipping(self):
+        model = MagicMock()
+        model.transcribe.return_value = {'text': 'test'}
+        backend = WhisperPCMBackend(model, language='de', normalize=True)
+        await backend.transcribe(PCMChunk(FORMAT, 0, b'\x64\x00' * 100))
+        quiet = model.transcribe.call_args.args[0]
+        self.assertGreater(float(quiet[0]), .01)
+        self.assertLessEqual(float(quiet.max()), .9)
+        await backend.transcribe(PCMChunk(FORMAT, 1, b'\xff\x7f' * 100))
+        self.assertGreater(float(model.transcribe.call_args.args[0][0]), .99)

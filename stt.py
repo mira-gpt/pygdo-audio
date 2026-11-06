@@ -24,11 +24,12 @@ class STTBackend(Protocol):
 class SilenceGate:
     """Skip quiet signed 16-bit PCM chunks before calling an STT backend."""
 
-    def __init__(self, backend: STTBackend, threshold: float = 0.003):
+    def __init__(self, backend: STTBackend, threshold: float = 0.003, on_silence=None):
         if not 0 <= threshold <= 1:
             raise ValueError('Silence threshold must be between 0 and 1.')
         self.backend = backend
         self.threshold = threshold
+        self.on_silence = on_silence
 
     async def transcribe(self, chunk: PCMChunk) -> str:
         if chunk.pcm_format.sample_width != 2:
@@ -36,6 +37,8 @@ class SilenceGate:
         import numpy as np
         audio = np.frombuffer(chunk.data, dtype='<i2').astype(np.float32) / 32768.0
         if not audio.size or float(np.sqrt(np.mean(audio * audio))) < self.threshold:
+            if self.on_silence:
+                self.on_silence()
             return ''
         return await self.backend.transcribe(chunk)
 
@@ -77,9 +80,10 @@ class WhisperPCMBackend:
 
     FORMAT = PCMFormat(sample_rate=16000, channels=1, sample_width=2)
 
-    def __init__(self, model, language: str | None = None):
+    def __init__(self, model, language: str | None = None, normalize: bool = False):
         self.model = model
         self.language = language
+        self.normalize = normalize
         self._lock = asyncio.Lock()
 
     async def transcribe(self, chunk: PCMChunk) -> str:
@@ -87,6 +91,13 @@ class WhisperPCMBackend:
             raise ValueError('Whisper requires 16 kHz mono signed 16-bit little-endian PCM.')
         import numpy as np
         audio = np.frombuffer(chunk.data, dtype='<i2').astype(np.float32) / 32768.0
+        if self.normalize and audio.size:
+            peak = float(np.max(np.abs(audio)))
+            rms = float(np.sqrt(np.mean(audio * audio)))
+            if 0 < peak < .9 and rms > 0:
+                gain = min(8.0, .06 / rms, .9 / peak)
+                if gain > 1:
+                    audio *= gain
         async with self._lock:
             result = await asyncio.to_thread(self.model.transcribe, audio, language=self.language, fp16=False)
         text = result.get('text', '')

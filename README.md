@@ -61,6 +61,14 @@ read, or create a network connection. A platform adapter owns those actions.
 
 ## Whisper file helper
 
+`$audio.record start` queues an explicit private recording from the existing
+microphone listener. `$audio.record stop`, or a recognized standalone “stop”
+or “stopp”, ends it; it also ends after 30 seconds or if the listener stops.
+WAV files are saved in a private temporary directory, not automatically shared.
+Speech recognition can miss the spoken stop; use the manual command as backup.
+A queued response does not confirm recording started. Only record with the
+consent of everyone whose voice may be captured.
+
 `transcribe_file()` transcribes one existing audio file with local Whisper and
 passes one final event to an explicit async emitter:
 
@@ -78,6 +86,7 @@ chooses the emitter that forwards the event into PyGDO.
 `$audio.jingle v8` queues `jingles/v8.mp3` for playback on the configured
 output sink. Jingle files are local and ignored by Git. FFmpeg and access to
 the output's audio session are required.
+`$audio.jingle duck` plays the local synthesized duck jingle if installed.
 `$audio.say <text>` queues local speech using espeak-ng and the same sink.
 The short trigger is `$spk <text>`.
 

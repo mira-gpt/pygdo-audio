@@ -1,7 +1,10 @@
 from pathlib import Path
 
 
-JINGLES = {'v8': Path(__file__).resolve().parent / 'jingles' / 'v8.mp3'}
+JINGLES = {
+    'v8': Path(__file__).resolve().parent / 'jingles' / 'v8.mp3',
+    'duck': Path(__file__).resolve().parent / 'jingles' / 'duck.wav',
+}
 
 
 def jingle_path(key: str) -> Path:
