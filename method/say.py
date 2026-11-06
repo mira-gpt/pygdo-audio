@@ -1,7 +1,7 @@
 from gdo.base.Application import Application
 from gdo.base.IPC import IPC
 from gdo.base.Method import Method
-from gdo.core.GDT_String import GDT_String
+from gdo.core.GDT_RestOfText import GDT_RestOfText
 from gdo.core.GDT_Enum import GDT_Enum
 from gdo.audio.language import VOICES
 import msgspec.json
@@ -16,7 +16,7 @@ class say(Method):
         return 'owner'
 
     def gdo_parameters(self):
-        return [GDT_String('text').not_null().maxlen(300).positional().tooltip('tt_audio_say_text'),
+        return [GDT_RestOfText('text').not_null().tooltip('tt_audio_say_text'),
                 GDT_Enum('lang').choices({'en': 'English', 'de': 'Deutsch'}).tooltip('tt_audio_say_language')]
 
     def gdo_execute(self):
@@ -26,7 +26,10 @@ class say(Method):
             language = self.param_val('lang') or (channel.get_lang_iso() if channel else server.get_lang_iso() if server else 'en')
             if language not in VOICES:
                 raise ValueError('Unsupported speech language; choose --lang=en or --lang=de')
-            args = ('audio.ipc_say', [self.param_val('text'), language])
+            text = self.param_val('text')
+            if len(text) > 300:
+                raise ValueError('Speech text is limited to 300 characters')
+            args = ('audio.ipc_say', [text, language])
             if len(msgspec.json.encode(args[1])) > IPC.MAX_EVENT_ARG_SIZE:
                 raise ValueError('Speech request exceeds IPC size limit')
             if Application.db().is_in_transaction():

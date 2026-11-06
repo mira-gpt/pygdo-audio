@@ -23,6 +23,19 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(method.gdo_execute(), 'queued')
         send.assert_called_once_with('audio.ipc_say', ['Quack!', 'de'])
 
+    def test_text_parameter_accepts_all_positional_words(self):
+        field = say().gdo_parameters()[0]
+        field.val(['Hallo', 'Ray,', 'hallo', 'Caffe!'])
+        self.assertEqual('Hallo Ray, hallo Caffe!', field.get_value())
+
+    def test_overlong_speech_is_rejected(self):
+        method = say()
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'x' * 301, 'lang': 'de'}[key])
+        method.err = MagicMock(return_value='rejected')
+        with patch('gdo.audio.method.say.IPC.send_to_dog') as send:
+            self.assertEqual('rejected', method.gdo_execute())
+        send.assert_not_called()
+
     async def test_voice_is_piped_to_configured_output(self):
         method = ipc_say()
         method.param_val = MagicMock(side_effect=lambda key: {'text': 'Quack!', 'lang': 'de'}[key])
