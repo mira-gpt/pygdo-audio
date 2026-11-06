@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from gdo.audio.module_audio import module_audio
 from gdo.audio.language import VOICES
+from gdo.audio.SpeechEnvelope import speech_envelope
 from gdo.base.Application import Application
 from gdo.base.Logger import Logger
 from gdo.base.Method import Method
@@ -57,6 +58,9 @@ class ipc_say(Method):
                     try:
                         await events.publish('audio_speech_start', speech_id, self.param_val('text'))
                         started = True
+                        levels = speech_envelope(wav)
+                        if levels:
+                            await events.publish('audio_speech_envelope', speech_id, levels, 50)
                     except Exception as error:
                         Logger.warning(f'Speech display event failed: {type(error).__name__}')
                 await player.communicate(wav)

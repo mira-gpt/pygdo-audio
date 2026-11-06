@@ -1,4 +1,6 @@
 import unittest
+import io
+import wave
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from gdo.audio.method.say import say
@@ -100,3 +102,33 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(['audio_speech_start', 'audio_speech_end'], [call.args[0] for call in calls])
         self.assertEqual(calls[0].args[1], calls[1].args[1])
         self.assertEqual('Hello', calls[0].args[2])
+
+    async def test_real_wav_emits_timed_envelope_before_playback_finishes(self):
+        buffer = io.BytesIO()
+        with wave.open(buffer, 'wb') as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(16000)
+            wav.writeframes(b'\x00\x00' * 800 + b'\x00\x30' * 800)
+        method = ipc_say()
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'Hallo', 'lang': 'de'}[key])
+        method.empty = MagicMock()
+        voice, player = MagicMock(), MagicMock()
+        voice.communicate = AsyncMock(return_value=(buffer.getvalue(), b''))
+        player.communicate = AsyncMock(return_value=(None, None))
+        voice.returncode = player.returncode = 0
+        module = MagicMock()
+        module.cfg_output_device.return_value = 'sink'
+        module.get_config_val.return_value = 'espeak'
+        events = MagicMock()
+        events.publish = AsyncMock()
+        with patch.object(Application, 'IS_DOG', True), \
+             patch.object(Application, 'EVENTS', events, create=True), \
+             patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
+             patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]):
+            await method.gdo_execute()
+        calls = events.publish.await_args_list
+        self.assertEqual(['audio_speech_start', 'audio_speech_envelope', 'audio_speech_end'], [call.args[0] for call in calls])
+        self.assertEqual(calls[0].args[1], calls[1].args[1])
+        self.assertEqual([0.0, 1.0], calls[1].args[2])
+        self.assertEqual(50, calls[1].args[3])
