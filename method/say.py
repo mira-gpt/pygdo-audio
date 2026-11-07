@@ -17,13 +17,13 @@ class say(Method):
 
     def gdo_parameters(self):
         return [GDT_RestOfText('text').not_null().tooltip('tt_audio_say_text'),
-                GDT_Enum('lang').choices({'en': 'English', 'de': 'Deutsch', 'ko': 'Korean', 'vi': 'Vietnamese', 'ja': 'Japanese'}).tooltip('tt_audio_say_language')]
+                GDT_Enum('lang').choices({'en': 'English', 'de': 'Deutsch', 'ko': 'Korean', 'vi': 'Vietnamese', 'ja': 'Japanese', 'sq': 'Albanian'}).tooltip('tt_audio_say_language')]
 
     def gdo_execute(self):
         try:
             language = speech_language(self, self.param_val('lang'))
             if language not in VOICES:
-                raise ValueError('Unsupported speech language; choose en, de, ko, vi or ja')
+                raise ValueError('Unsupported speech language; choose en, de, ko, vi, ja or sq')
             text = self.param_val('text')
             if len(text) > 300:
                 raise ValueError('Speech text is limited to 300 characters')

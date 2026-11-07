@@ -25,7 +25,7 @@ class LanguageTest(unittest.IsolatedAsyncioTestCase):
 
     def test_voice_languages(self):
         self.assertEqual('de+f3', VOICES['de'])
-        for code in ('ko', 'vi', 'ja'):
+        for code in ('ko', 'vi', 'ja', 'sq'):
             self.assertEqual(code, VOICES[code])
 
 

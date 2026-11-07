@@ -186,7 +186,7 @@ class MicrophoneController:
                 await self.stop()
             if self.task or self.failed_setting == settings:
                 return
-            if language not in ('en', 'de', 'ko', 'vi', 'ja') or not 0 <= min_letters <= 50:
+            if language not in ('en', 'de', 'ko', 'vi', 'ja', 'sq') or not 0 <= min_letters <= 50:
                 raise ValueError('Invalid audio language or transcript filter.')
             if not operator_id or not str(operator_id).isdecimal():
                 raise ValueError('Configure an audio operator before enabling the microphone.')

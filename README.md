@@ -271,15 +271,15 @@ This queues speech to Test Dog, which needs paplay, the selected speech backend,
 and access to
 the sink's audio session. Queued does not mean playback succeeded.
 `$audio.language de` selects German microphone transcription; `en`, `ko`, `vi`,
-and `ja` select English, Korean, Vietnamese, and Japanese. The local Whisper
+`ja`, and `sq` select English, Korean, Vietnamese, Japanese, and Albanian. The local Whisper
 `base` model is multilingual; recognition quality depends on the language and
 audio. This microphone setting is module-wide and defaults to English.
 
 The code default for text-to-speech is eSpeak NG. On Mogwai's Test Dog, the
 configuration inspected on 2026-11-07 selects **Piper**, with existing English
-and German model files. Piper models for Korean, Vietnamese, and Japanese are
+and German model files. Piper models for Korean, Vietnamese, Japanese, and Albanian are
 not yet configurable in this module, so enabling those language codes alone
-does not make them speak on that Test Dog. eSpeak NG voices for all five codes
+does not make them speak on that Test Dog. eSpeak NG voices for all six codes
 are installed locally, but switching backends changes the voice for the whole
 module. Do not silently switch the live setup. Piper needs language-specific
 model configuration and verification before those three voices can be claimed
