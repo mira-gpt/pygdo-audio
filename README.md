@@ -122,6 +122,11 @@ for `status`, normalized RMS `gain` and dominant `frequency_hz` (or `None`
 for silence). Values expire after two seconds. This measures the selected
 microphone input, not the system/music output; it does not start capture.
 
+Plugins in the same Dog process can call `SpeechPlayback.is_playing()` from
+`gdo.audio.SpeechPlayback` to check whether at least one `$spk` playback is
+active. It excludes synthesis and unrelated audio; the existing
+`audio_speech_start` and `audio_speech_end` events also identify each playback.
+
 `PCMRoute` is the generic, device-independent boundary for raw PCM. It owns a
 single fixed `PCMFormat` and two bounded queues:
 

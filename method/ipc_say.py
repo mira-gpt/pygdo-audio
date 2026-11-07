@@ -4,6 +4,7 @@ from uuid import uuid4
 from gdo.audio.module_audio import module_audio
 from gdo.audio.language import VOICES
 from gdo.audio.SpeechEnvelope import speech_envelope
+from gdo.audio.SpeechPlayback import SpeechPlayback
 from gdo.base.Application import Application
 from gdo.base.Logger import Logger
 from gdo.base.Method import Method
@@ -23,6 +24,7 @@ class ipc_say(Method):
         if Application.IS_DOG:
             speech_id = uuid4().hex
             started = False
+            playing = False
             process = None
             try:
                 module = module_audio.instance()
@@ -58,6 +60,8 @@ class ipc_say(Method):
                     stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.DEVNULL,
                     stderr=asyncio.subprocess.DEVNULL)
                 process = player
+                SpeechPlayback.start(speech_id)
+                playing = True
                 events = getattr(Application, 'EVENTS', None)
                 if events:
                     try:
@@ -81,6 +85,8 @@ class ipc_say(Method):
                         await process.wait()
                     except ProcessLookupError:
                         pass
+                if playing:
+                    SpeechPlayback.end(speech_id)
                 if started:
                     try:
                         await events.publish('audio_speech_end', speech_id)
