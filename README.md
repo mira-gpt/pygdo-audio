@@ -282,13 +282,16 @@ audio. This microphone setting is module-wide and defaults to English.
 
 The code default for text-to-speech is eSpeak NG. On Mogwai's Test Dog, the
 configuration inspected on 2026-11-07 selects **Piper**, with existing English
-and German model files. Piper models for Korean, Vietnamese, Japanese, and Albanian are
-not yet configurable in this module, so enabling those language codes alone
-does not make them speak on that Test Dog. eSpeak NG voices for all six codes
+and German model files. On 2026-11-07, Korean `kss`, Vietnamese `vais1000`,
+Japanese `hi_fi_captain`, and Albanian `edon` models were configured under
+`files_tes/piper_voices/`. Their individual model-card and dataset licences
+must be checked for the intended use: the Korean and Japanese datasets are
+CC BY-NC-SA 4.0; the Vietnamese dataset is CC BY 4.0 and the Albanian dataset
+is CC0. Generated test files were checked locally, not live playback. Japanese
+also requires `pyopenjtalk`; the current test Piper installation is under `/tmp`
+and is not durable across cleanup or reboot. eSpeak NG voices for all six codes
 are installed locally, but switching backends changes the voice for the whole
-module. Do not silently switch the live setup. Piper needs language-specific
-model configuration and verification before those three voices can be claimed
-working. For
+module. Do not silently switch the live setup. For
 speech, pass the routed chat event's language explicitly, for example
 `pygdotest '$spk --lang=de "Hallo!"'`; otherwise the calling GDO channel's
 language is used. Select destinations carefully before
