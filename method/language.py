@@ -8,7 +8,7 @@ class language(Method):
         return 'owner'
 
     def gdo_parameters(self):
-        return [GDT_Enum('language').choices({'en': 'English', 'de': 'Deutsch'}).not_null().positional().tooltip('tt_audio_language')]
+        return [GDT_Enum('language').choices({'en': 'English', 'de': 'Deutsch', 'ko': 'Korean', 'vi': 'Vietnamese', 'ja': 'Japanese'}).not_null().positional().tooltip('tt_audio_language')]
 
     async def gdo_execute(self):
         language = self.param_val('language')

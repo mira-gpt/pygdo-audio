@@ -1,4 +1,5 @@
-VOICES = {'en': 'en-us+f3', 'de': 'de+f3'}
+VOICES = {'en': 'en-us+f3', 'de': 'de+f3', 'ko': 'ko', 'vi': 'vi', 'ja': 'ja'}
+LANGUAGES = {'en': 'English', 'de': 'Deutsch', 'ko': '한국어', 'vi': 'Tiếng Việt', 'ja': '日本語'}
 
 
 def speech_language(method, explicit=None):

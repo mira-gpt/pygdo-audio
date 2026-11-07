@@ -34,7 +34,7 @@ class module_audio(GDO_Module):
             GDT_User('audio_operator').tooltip('tt_audio_operator'),
             GDT_Bool('audio_microphone').not_null().initial('0').tooltip('tt_audio_microphone'),
             GDT_String('audio_microphone_session_user').ascii().maxlen(32).tooltip('tt_audio_microphone_session_user'),
-            GDT_Enum('audio_microphone_language').choices({'en': 'English', 'de': 'Deutsch'}).not_null().initial('en').tooltip('tt_audio_language'),
+            GDT_Enum('audio_microphone_language').choices({'en': 'English', 'de': 'Deutsch', 'ko': 'Korean', 'vi': 'Vietnamese', 'ja': 'Japanese'}).not_null().initial('en').tooltip('tt_audio_language'),
             GDT_UInt('audio_transcript_min_letters').min(0).max(50).not_null().initial('4').tooltip('tt_audio_transcript_min_letters'),
         ]
 

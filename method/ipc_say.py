@@ -35,7 +35,8 @@ class ipc_say(Method):
                 backend = module.get_config_val('audio_tts_backend') or 'espeak'
                 if backend == 'piper':
                     binary = module.get_config_val('audio_piper_binary')
-                    model = module.get_config_val(f'audio_piper_model_{language}')
+                    model_key = f'audio_piper_model_{language}'
+                    model = module.get_config_val(model_key) if module.config_column(model_key) else None
                     if not binary or not model:
                         raise ValueError(f'Piper executable or {language} model is not configured')
                     command = [binary, '--model', model, '--output-file', '-']
