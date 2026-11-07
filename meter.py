@@ -25,15 +25,18 @@ class MicrophoneMeter:
     _transcription = 'unknown'
     _transcription_text = ''
     _transcription_text_updated = 0.0
+    _transcription_language = ''
 
     @classmethod
-    def transcription_state(cls, state):
+    def transcription_state(cls, state, language=None):
         if state not in ('off', 'starting', 'on', 'error', 'unknown'):
             raise ValueError('Invalid transcription state')
         with cls._lock:
-            if cls._transcription == state:
+            if cls._transcription == state and (language is None or cls._transcription_language == language):
                 return
             cls._transcription = state
+            if language is not None:
+                cls._transcription_language = language
             cls._transcription_text = ''
             cls._transcription_text_updated = 0.0
             callbacks = tuple(cls._subscribers)
@@ -43,6 +46,11 @@ class MicrophoneMeter:
     def transcription_snapshot(cls):
         with cls._lock:
             return cls._transcription
+
+    @classmethod
+    def transcription_language(cls):
+        with cls._lock:
+            return cls._transcription_language
 
     @classmethod
     def set_transcription_text(cls, text):

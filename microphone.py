@@ -84,7 +84,7 @@ async def run_microphone(operator, channel, session_user: str | None = None,
     segments = asyncio.create_task(segment_speech(capture_route, speech_route,
                                    on_segment=lambda: diagnostics.mark('segments', count=True, force=True)))
     transcription = asyncio.create_task(STTStream(stream_id, backend).run(speech_route, emit))
-    MicrophoneMeter.transcription_state('on')
+    MicrophoneMeter.transcription_state('on', language=language)
     Logger.debug('Microphone transcription started.')
     try:
         done, _ = await asyncio.wait((capture, segments, transcription), return_when=asyncio.FIRST_COMPLETED)

@@ -45,6 +45,7 @@ class JingleTest(unittest.IsolatedAsyncioTestCase):
         process.wait = AsyncMock(return_value=0)
         module = MagicMock()
         module.cfg_output_device.return_value = 'mira_stream'
+        module.get_config_val.return_value = None
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.audio.method.ipc_jingle.module_audio.instance', return_value=module), \
                 patch('gdo.audio.method.ipc_jingle.asyncio.create_subprocess_exec', new_callable=AsyncMock, return_value=process) as spawn:

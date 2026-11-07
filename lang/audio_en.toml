@@ -1,6 +1,8 @@
 module_audio = "Audio"
 cfg_audio_output_device = "Audio output device"
 tt_audio_output_device = "Explicit output sink name for the audio mix, such as a PipeWire virtual sink or speakers. Empty disables device output; selecting a device does not start playback."
+cfg_audio_output_session_user = "Audio output session user"
+tt_audio_output_session_user = "Optional desktop session user for audio playback; requires appropriate sudo permission."
 cfg_audio_operator = "Audio operator"
 tt_audio_operator = "User attributed to local microphone speech. This does not verify the speaker; anyone near the microphone may be interpreted as this user."
 cfg_audio_microphone = "Continuous microphone transcription"

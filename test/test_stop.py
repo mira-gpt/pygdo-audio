@@ -34,7 +34,7 @@ class AudioStopTest(unittest.IsolatedAsyncioTestCase):
         method.param_val = MagicMock(side_effect=lambda key: {'text': 'Hi', 'lang': 'en'}[key])
         module = MagicMock()
         module.cfg_output_device.return_value = 'sink'
-        module.get_config_val.return_value = 'espeak'
+        module.get_config_val.side_effect = lambda key: 'espeak' if key == 'audio_tts_backend' else None
         started = asyncio.Event()
         voice = MagicMock(returncode=None)
         async def communicate(*_):
@@ -60,7 +60,7 @@ class AudioStopTest(unittest.IsolatedAsyncioTestCase):
         method.param_val = MagicMock(side_effect=lambda key: {'text': 'Hi', 'lang': 'en'}[key])
         module = MagicMock()
         module.cfg_output_device.return_value = 'sink'
-        module.get_config_val.return_value = 'espeak'
+        module.get_config_val.side_effect = lambda key: 'espeak' if key == 'audio_tts_backend' else None
         voice = MagicMock(returncode=0, communicate=AsyncMock(return_value=(b'wav', b'')))
         started = asyncio.Event()
         async def playing(*_):

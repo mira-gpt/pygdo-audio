@@ -7,6 +7,12 @@ from gdo.audio.meter import MicrophoneMeter
 
 
 class MeterTest(unittest.TestCase):
+    def test_active_transcription_language_can_change(self):
+        MicrophoneMeter.transcription_state('on', language='de')
+        self.assertEqual('de', MicrophoneMeter.transcription_language())
+        MicrophoneMeter.transcription_state('on', language='en')
+        self.assertEqual('en', MicrophoneMeter.transcription_language())
+
     def test_audio_features_follow_signal_and_stale_state(self):
         rate = 16000
         data = b''.join(struct.pack('<h', round(16000 * math.sin(2 * math.pi * 1000 * i / rate))) for i in range(800))

@@ -6,6 +6,7 @@ from gdo.audio.language import VOICES
 from gdo.audio.SpeechEnvelope import speech_envelope
 from gdo.audio.SpeechPlayback import SpeechPlayback
 from gdo.audio.PlaybackTasks import PlaybackTasks
+from gdo.audio.session import audio_session_command
 from gdo.base.Application import Application
 from gdo.base.Logger import Logger
 from gdo.base.Method import Method
@@ -67,8 +68,11 @@ class ipc_say(Method):
                 process = None
                 if voice.returncode:
                     raise RuntimeError('Speech synthesis failed')
+                player_command = audio_session_command(
+                    ['paplay', '--device', target, '--stream-name', 'mira-voice'],
+                    module.get_config_val('audio_output_session_user') or None)
                 player = await asyncio.create_subprocess_exec(
-                    'paplay', '--device', target, '--stream-name', 'mira-voice',
+                    *player_command,
                     stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.DEVNULL,
                     stderr=asyncio.subprocess.DEVNULL)
                 process = player

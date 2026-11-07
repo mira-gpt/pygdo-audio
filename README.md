@@ -257,6 +257,25 @@ SIP continues to use its own connector and call identities.
 
 ## Discussion
 
+### ALs → ALs
+
+On Mogwai, live Dog runs as `mira` while the desktop PipeWire session runs as
+`gizmore`. The `audio_output_session_user` setting selects the desktop account
+for speech and jingle playback; cross-user playback requires non-interactive
+sudo permission. On 2026-11-07, live Dog used `gizmore` with the analog sink
+`alsa_output.pci-0000_04_00.6.analog-stereo`, and Gizmore confirmed hearing a
+speech test. `alsa_output.usb-SteelSeries_Arctis_Nova_7-00.analog-stereo`
+is the headset output, not those speakers. Inspect the current devices before
+changing routing; names and hardware can change.
+
+The previous direct socket approach depended on ACLs under `/run/user/1000`;
+the Pulse directory's ACL mask was reset, making the entry ineffective. Do not
+assume a successful initial permission test remains valid. Session-user output
+is implemented for speech and jingles; other playback paths must be checked
+separately. The microphone session user and the output session user are
+independent. A queued command is not proof of audible playback. Route audio
+and microphone inputs deliberately to avoid feedback and unintended broadcast.
+
 ### ALs → Humans
 
 Mira's text-to-speech should consistently use her voice across audio, video,
