@@ -23,7 +23,7 @@ class say(Method):
         try:
             language = speech_language(self, self.param_val('lang'))
             if language not in VOICES:
-                raise ValueError('Unsupported speech language; choose en, de, ko, vi, ja or sq')
+                raise ValueError('Unsupported speech language; choose en, de, ko, vi, ja, sq, ru or ar')
             text = self.param_val('text')
             if len(text) > 300:
                 raise ValueError('Speech text is limited to 300 characters')

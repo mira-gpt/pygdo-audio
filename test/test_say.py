@@ -1,4 +1,5 @@
 import unittest
+import asyncio
 import io
 import wave
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -12,6 +13,33 @@ from gdo.base.Render import Mode
 class SayTest(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         Application.mode(Mode.render_cli)
+
+    async def test_speech_requests_play_in_order(self):
+        first_started = asyncio.Event()
+        release_first = asyncio.Event()
+        order = []
+        first, second = ipc_say(), ipc_say()
+
+        async def play_first():
+            order.append('first start')
+            first_started.set()
+            await release_first.wait()
+            order.append('first end')
+
+        async def play_second():
+            order.append('second')
+
+        with patch.object(ipc_say, '_speech_lock', asyncio.Lock()), \
+                patch.object(first, '_play_one', side_effect=play_first), \
+                patch.object(second, '_play_one', side_effect=play_second):
+            one = asyncio.create_task(first.play())
+            await first_started.wait()
+            two = asyncio.create_task(second.play())
+            await asyncio.sleep(0)
+            self.assertEqual(['first start'], order)
+            release_first.set()
+            await asyncio.gather(one, two)
+        self.assertEqual(['first start', 'first end', 'second'], order)
 
     def test_command_queues_text(self):
         method = say()

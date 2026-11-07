@@ -13,6 +13,8 @@ from gdo.core.GDT_String import GDT_String
 
 
 class ipc_say(Method):
+    _speech_lock = asyncio.Lock()
+
     @classmethod
     def gdo_trigger(cls):
         return ''
@@ -27,6 +29,10 @@ class ipc_say(Method):
         return self.empty()
 
     async def play(self):
+        async with self._speech_lock:
+            await self._play_one()
+
+    async def _play_one(self):
         if Application.IS_DOG:
             speech_id = uuid4().hex
             started = False

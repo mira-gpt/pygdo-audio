@@ -280,7 +280,7 @@ remixes/SID playback and video-zap audio. It does not stop unrelated desktop
 audio, microphone capture, or the visual video effect. A queued reply does not
 confirm that all playback has already stopped.
 `$audio.language de` selects German microphone transcription; `en`, `ko`, `vi`,
-`ja`, and `sq` select English, Korean, Vietnamese, Japanese, and Albanian. The local Whisper
+`ja`, `sq`, and `ru` select English, Korean, Vietnamese, Japanese, Albanian, and Russian. The local Whisper
 `base` model is multilingual; recognition quality depends on the language and
 audio. This microphone setting is module-wide and defaults to English.
 
@@ -293,7 +293,10 @@ must be checked for the intended use: the Korean and Japanese datasets are
 CC BY-NC-SA 4.0; the Vietnamese dataset is CC BY 4.0 and the Albanian dataset
 is CC0. Generated test files were checked locally, not live playback. Japanese
 also requires `pyopenjtalk`; the current test Piper installation is under `/tmp`
-and is not durable across cleanup or reboot. eSpeak NG voices for all six codes
+and is not durable across cleanup or reboot. Russian `ru_RU-denis-medium` is
+configured for Test Dog under `files_tes/piper_voices/`; its model card lists
+the voice dataset as CC0. Russian synthesis was checked locally, not as live
+playback. Check all model and dataset rights for the intended use. eSpeak NG voices for the previous six codes
 are installed locally, but switching backends changes the voice for the whole
 module. Do not silently switch the live setup. For
 speech, pass the routed chat event's language explicitly, for example
