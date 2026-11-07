@@ -53,7 +53,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
                 patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]) as spawn:
-            await method.gdo_execute()
+            await method.play()
         voice.communicate.assert_awaited_once_with(b'Quack!')
         player.communicate.assert_awaited_once_with(b'wav')
         args = spawn.call_args_list[1].args
@@ -77,7 +77,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
                 patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]) as spawn:
-            await method.gdo_execute()
+            await method.play()
         self.assertEqual(('/opt/piper', '--model', '/opt/de.onnx', '--output-file', '-'), spawn.call_args_list[0].args)
         player.communicate.assert_awaited_once_with(b'wav')
 
@@ -98,7 +98,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
                 patch.object(Application, 'EVENTS', events, create=True), \
                 patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
                 patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]):
-            await method.gdo_execute()
+            await method.play()
         calls = events.publish.await_args_list
         self.assertEqual(['audio_speech_start', 'audio_speech_end'], [call.args[0] for call in calls])
         self.assertEqual(calls[0].args[1], calls[1].args[1])
@@ -127,7 +127,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
              patch.object(Application, 'EVENTS', events, create=True), \
              patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
              patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]):
-            await method.gdo_execute()
+            await method.play()
         calls = events.publish.await_args_list
         self.assertEqual(['audio_speech_start', 'audio_speech_envelope', 'audio_speech_end'], [call.args[0] for call in calls])
         self.assertEqual(calls[0].args[1], calls[1].args[1])

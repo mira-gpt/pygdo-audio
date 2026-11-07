@@ -1,6 +1,7 @@
 import asyncio
 
 from gdo.audio.jingles import jingle_path
+from gdo.audio.PlaybackTasks import PlaybackTasks
 from gdo.audio.module_audio import module_audio
 from gdo.base.Application import Application
 from gdo.base.Logger import Logger
@@ -18,6 +19,12 @@ class ipc_jingle(Method):
 
     async def gdo_execute(self):
         if Application.IS_DOG:
+            PlaybackTasks.start(self.play())
+        return self.empty()
+
+    async def play(self):
+        if Application.IS_DOG:
+            process = None
             try:
                 target = module_audio.instance().cfg_output_device()
                 if not target:
@@ -31,4 +38,11 @@ class ipc_jingle(Method):
                     Logger.warning('Audio jingle playback failed; check audio session and output device.')
             except (ValueError, OSError) as exc:
                 Logger.warning(f'Audio jingle playback failed: {exc}')
+            finally:
+                if process is not None and process.returncode is None:
+                    try:
+                        process.terminate()
+                        await process.wait()
+                    except ProcessLookupError:
+                        pass
         return self.empty()

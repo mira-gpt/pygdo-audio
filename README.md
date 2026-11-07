@@ -275,6 +275,10 @@ pygdotest '$spk "Hello from Mira!"'
 This queues speech to Test Dog, which needs paplay, the selected speech backend,
 and access to
 the sink's audio session. Queued does not mean playback succeeded.
+`$audio.stop` queues cancellation of GDO-owned speech, readalong, jingles,
+remixes/SID playback and video-zap audio. It does not stop unrelated desktop
+audio, microphone capture, or the visual video effect. A queued reply does not
+confirm that all playback has already stopped.
 `$audio.language de` selects German microphone transcription; `en`, `ko`, `vi`,
 `ja`, and `sq` select English, Korean, Vietnamese, Japanese, and Albanian. The local Whisper
 `base` model is multilingual; recognition quality depends on the language and

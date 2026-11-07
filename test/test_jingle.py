@@ -48,7 +48,7 @@ class JingleTest(unittest.IsolatedAsyncioTestCase):
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.audio.method.ipc_jingle.module_audio.instance', return_value=module), \
                 patch('gdo.audio.method.ipc_jingle.asyncio.create_subprocess_exec', new_callable=AsyncMock, return_value=process) as spawn:
-            await method.gdo_execute()
+            await method.play()
         args = spawn.call_args.args
         self.assertEqual(args[args.index('-device') + 1], 'mira_stream')
         self.assertIn(str(jingle_path('v8')), args)

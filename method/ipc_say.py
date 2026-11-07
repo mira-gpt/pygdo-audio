@@ -5,6 +5,7 @@ from gdo.audio.module_audio import module_audio
 from gdo.audio.language import VOICES
 from gdo.audio.SpeechEnvelope import speech_envelope
 from gdo.audio.SpeechPlayback import SpeechPlayback
+from gdo.audio.PlaybackTasks import PlaybackTasks
 from gdo.base.Application import Application
 from gdo.base.Logger import Logger
 from gdo.base.Method import Method
@@ -21,6 +22,11 @@ class ipc_say(Method):
                 GDT_String('lang').not_null().positional()]
 
     async def gdo_execute(self):
+        if Application.IS_DOG:
+            PlaybackTasks.start(self.play())
+        return self.empty()
+
+    async def play(self):
         if Application.IS_DOG:
             speech_id = uuid4().hex
             started = False
