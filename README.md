@@ -296,3 +296,12 @@ speech, pass the routed chat event's language explicitly, for example
 `pygdotest '$spk --lang=de "Hallo!"'`; otherwise the calling GDO channel's
 language is used. Select destinations carefully before
 speaking in a shared stream or call.
+
+Use `$mic --lang=de 1` to request continuous Whisper microphone transcription,
+or `$mic 0` to disable it; without `--lang`, enabling uses the caller's language,
+falling back to the saved language if none is available. Disabling without an
+override leaves the language unchanged. Supported
+codes come from the installed Whisper version. The configured audio operator and
+microphone session still apply. Anyone near the selected microphone can be
+transcribed; a successful command requests a change but does not prove capture
+or recognition is working. The microphone level meter is a separate feature.

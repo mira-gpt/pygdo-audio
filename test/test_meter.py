@@ -40,6 +40,19 @@ class MeterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             MicrophoneMeter.transcription_state('invalid')
 
+    def test_transcription_timestamp_resets_on_new_text_and_stop(self):
+        from unittest.mock import patch
+        MicrophoneMeter.transcription_state('off')
+        MicrophoneMeter.transcription_state('on')
+        with patch('gdo.audio.meter.time.monotonic', return_value=100):
+            MicrophoneMeter.set_transcription_text('first')
+        self.assertEqual(100, MicrophoneMeter.transcription_text_timestamp())
+        with patch('gdo.audio.meter.time.monotonic', return_value=105):
+            MicrophoneMeter.set_transcription_text('second')
+        self.assertEqual(105, MicrophoneMeter.transcription_text_timestamp())
+        MicrophoneMeter.transcription_state('off')
+        self.assertEqual(0, MicrophoneMeter.transcription_text_timestamp())
+
     def test_updates_notify_subscribers_and_unsubscribe(self):
         callback = MagicMock()
         MicrophoneMeter.subscribe(callback)

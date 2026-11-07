@@ -2,6 +2,12 @@ VOICES = {'en': 'en-us+f3', 'de': 'de+f3', 'ko': 'ko', 'vi': 'vi', 'ja': 'ja', '
 LANGUAGES = {'en': 'English', 'de': 'Deutsch', 'ko': '한국어', 'vi': 'Tiếng Việt', 'ja': '日本語', 'sq': 'Shqip'}
 
 
+def whisper_languages():
+    """Return the language codes supported by the installed Whisper version."""
+    from whisper.tokenizer import LANGUAGES as supported
+    return supported
+
+
 def speech_language(method, explicit=None):
     """Explicit choice, user preference, channel, server, then English."""
     if explicit:

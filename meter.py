@@ -24,6 +24,7 @@ class MicrophoneMeter:
     _subscribers = set()
     _transcription = 'unknown'
     _transcription_text = ''
+    _transcription_text_updated = 0.0
 
     @classmethod
     def transcription_state(cls, state):
@@ -34,6 +35,7 @@ class MicrophoneMeter:
                 return
             cls._transcription = state
             cls._transcription_text = ''
+            cls._transcription_text_updated = 0.0
             callbacks = tuple(cls._subscribers)
         cls._notify(callbacks)
 
@@ -48,6 +50,7 @@ class MicrophoneMeter:
             if cls._transcription != 'on' or not text:
                 return
             cls._transcription_text = text
+            cls._transcription_text_updated = time.monotonic()
             callbacks = tuple(cls._subscribers)
         cls._notify(callbacks)
 
@@ -55,6 +58,11 @@ class MicrophoneMeter:
     def transcription_text_snapshot(cls):
         with cls._lock:
             return cls._transcription_text if cls._transcription == 'on' else ''
+
+    @classmethod
+    def transcription_text_timestamp(cls):
+        with cls._lock:
+            return cls._transcription_text_updated if cls._transcription == 'on' else 0.0
 
     @classmethod
     def subscribe(cls, callback):

@@ -19,8 +19,6 @@ class MeterOnly:
     async def start(self):
         if self.running():
             return
-        if self.module.microphone.settings()[0]:
-            raise RuntimeError('Disable microphone transcription before starting the meter-only input')
         from gdo.audio.microphone import default_microphone
         session_user = self.module.get_config_val('audio_microphone_session_user') or None
         source = await default_microphone(session_user)

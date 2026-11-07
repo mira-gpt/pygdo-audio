@@ -26,7 +26,8 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         send.assert_called_once_with('audio.ipc_say', ['Quack!', 'de'])
 
     def test_text_parameter_accepts_all_positional_words(self):
-        field = say().gdo_parameters()[0]
+        with patch('gdo.language.GDT_Language.GDO_Language.table'):
+            field = say().gdo_parameters()[0]
         field.val(['Hallo', 'Ray,', 'hallo', 'Caffe!'])
         self.assertEqual('Hallo Ray, hallo Caffe!', field.get_value())
 
