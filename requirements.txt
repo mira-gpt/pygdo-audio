@@ -1,3 +1,4 @@
 openai-whisper
+numpy
 # System dependency: FFmpeg executable (e.g. apt install ffmpeg); not a pip package.
 # Local speech prototype also requires the espeak-ng executable.

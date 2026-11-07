@@ -117,6 +117,11 @@ requires the transcription listener to be off and captures the default input
 only to calculate the live level. This does not confirm that a call participant
 hears you; check the communication application's input and mute settings.
 
+Other modules in the same Dog process can call `MicrophoneMeter.features()`
+for `status`, normalized RMS `gain` and dominant `frequency_hz` (or `None`
+for silence). Values expire after two seconds. This measures the selected
+microphone input, not the system/music output; it does not start capture.
+
 `PCMRoute` is the generic, device-independent boundary for raw PCM. It owns a
 single fixed `PCMFormat` and two bounded queues:
 

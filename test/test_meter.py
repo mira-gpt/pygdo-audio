@@ -1,10 +1,26 @@
 import unittest
+import math
+import struct
 from unittest.mock import MagicMock
 
 from gdo.audio.meter import MicrophoneMeter
 
 
 class MeterTest(unittest.TestCase):
+    def test_audio_features_follow_signal_and_stale_state(self):
+        rate = 16000
+        data = b''.join(struct.pack('<h', round(16000 * math.sin(2 * math.pi * 1000 * i / rate))) for i in range(800))
+        MicrophoneMeter.update(data, rate)
+        features = MicrophoneMeter.features()
+        self.assertEqual('on', features.status)
+        self.assertGreater(features.gain, .3)
+        self.assertAlmostEqual(1000, features.frequency_hz, delta=20)
+        self.assertIsNone(MicrophoneMeter.features(MicrophoneMeter._updated + 3).frequency_hz)
+        MicrophoneMeter.update(b'\0\0' * 800, rate)
+        self.assertIsNone(MicrophoneMeter.features().frequency_hz)
+        MicrophoneMeter.state('off')
+        self.assertEqual(('off', 0.0, None), MicrophoneMeter.features())
+
     def test_transcript_is_exact_and_cleared_when_disabled(self):
         MicrophoneMeter.transcription_state('on')
         text = 'Hallo, Mira!  Exactly as recognized.'
