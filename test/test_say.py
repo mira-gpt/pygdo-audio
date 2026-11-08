@@ -76,6 +76,30 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         field.val(['Hallo', 'Ray,', 'hallo', 'Caffe!'])
         self.assertEqual('Hallo Ray, hallo Caffe!', field.get_value())
 
+    def test_dog_suppresses_success_acknowledgement_only(self):
+        method = say()
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'Quack!', 'lang': 'en'}[key])
+        method.empty = MagicMock(return_value='')
+        method.reply = MagicMock(return_value='queued')
+        db = MagicMock()
+        db.is_in_transaction.return_value = False
+        with patch.object(Application, 'db', return_value=db), \
+                patch('gdo.audio.method.say.IPC.send_to_dog') as send:
+            with patch.object(Application, 'IS_DOG', True):
+                self.assertEqual('', method.gdo_execute())
+            with patch.object(Application, 'IS_DOG', False):
+                self.assertEqual('queued', method.gdo_execute())
+        self.assertEqual(2, send.call_count)
+
+    def test_dog_still_reports_speech_errors(self):
+        method = say()
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'x' * 301, 'lang': 'en'}[key])
+        method.err = MagicMock(return_value='rejected')
+        with patch.object(Application, 'IS_DOG', True), \
+                patch('gdo.audio.method.say.IPC.send_to_dog') as send:
+            self.assertEqual('rejected', method.gdo_execute())
+        send.assert_not_called()
+
     def test_overlong_speech_is_rejected(self):
         method = say()
         method.param_val = MagicMock(side_effect=lambda key: {'text': 'x' * 301, 'lang': 'de'}[key])

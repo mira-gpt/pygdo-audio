@@ -36,4 +36,4 @@ class say(Method):
                 IPC.send_to_dog(*args)
         except (ValueError, RuntimeError, OSError) as exc:
             return self.err('audio_jingle_error', (str(exc),))
-        return self.reply('audio_say_queued')
+        return self.empty() if Application.IS_DOG else self.reply('audio_say_queued')
