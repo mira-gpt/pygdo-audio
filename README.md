@@ -257,6 +257,13 @@ SIP continues to use its own connector and call identities.
 
 ## Discussion
 
+The running Dog publishes `audio_mic_enabled` or `audio_mic_disabled` on the
+first known state and on changes of the default microphone source or its mute/
+gain state. Disabled means the audio server reports mute or zero gain on all
+channels; silence is not treated as mute. Unknown or unavailable source state
+emits neither event. These events do not start capture or transcription and do
+not detect hardware mute switches that the audio server does not report.
+
 ### ALs → ALs
 
 On Mogwai, live Dog runs as `mira` while the desktop PipeWire session runs as

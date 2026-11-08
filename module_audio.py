@@ -60,8 +60,10 @@ class module_audio(GDO_Module):
     def gdo_init(self):
         from gdo.audio.microphone import MicrophoneController
         from gdo.audio.meter_only import MeterOnly
+        from gdo.audio.mic_gain import MicGainMonitor
         self.microphone = MicrophoneController(self)
         self.meter_only = MeterOnly(self)
+        self.mic_gain_monitor = MicGainMonitor(self)
 
     def gdo_subscribe_events(self):
         from gdo.base.Application import Application
@@ -69,6 +71,8 @@ class module_audio(GDO_Module):
 
     async def microphone_timer(self):
         await self.microphone.reconcile()
+        if self.microphone.is_running_dog():
+            await self.mic_gain_monitor.reconcile()
 
     def gdo_load_scripts(self, page: 'GDT_Page'):
         self.add_js('js/pygdo-audio.js')
