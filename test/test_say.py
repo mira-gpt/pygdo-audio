@@ -41,6 +41,37 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
             await asyncio.gather(one, two)
         self.assertEqual(['first start', 'first end', 'second'], order)
 
+    async def test_prefetch_runs_during_playback_but_preserves_order(self):
+        first, second = ipc_say(), ipc_say()
+        started, release, prepared = asyncio.Event(), asyncio.Event(), asyncio.Event()
+        order = []
+
+        async def play_first(wav):
+            order.append(('first', wav))
+            started.set()
+            await release.wait()
+
+        async def prepare_second():
+            prepared.set()
+            return b'second'
+
+        async def play_second(wav):
+            order.append(('second', wav))
+
+        with patch.object(ipc_say, '_speech_lock', asyncio.Lock()), \
+             patch.object(first, 'prepare', new_callable=AsyncMock, return_value=b'first'), \
+             patch.object(first, '_play_one', side_effect=play_first), \
+             patch.object(second, 'prepare', side_effect=prepare_second), \
+             patch.object(second, '_play_one', side_effect=play_second):
+            one = asyncio.create_task(first.play_prefetched())
+            await started.wait()
+            two = asyncio.create_task(second.play_prefetched(one))
+            await prepared.wait()
+            self.assertEqual([('first', b'first')], order)
+            release.set()
+            await asyncio.gather(one, two)
+        self.assertEqual([('first', b'first'), ('second', b'second')], order)
+
     async def test_speech_player_uses_selected_output_session(self):
         method = ipc_say()
         method.param_val = MagicMock(side_effect=lambda key: {'text': 'Hello', 'lang': 'en'}[key])

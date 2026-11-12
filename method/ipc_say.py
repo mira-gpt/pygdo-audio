@@ -65,7 +65,50 @@ class ipc_say(Method):
         async with self._speech_lock:
             await self._play_one()
 
-    async def _play_one(self):
+    async def play_prefetched(self, previous=None):
+        try:
+            wav = await self.prepare()
+            if previous is not None:
+                await asyncio.gather(asyncio.shield(previous), return_exceptions=True)
+            async with self._speech_lock:
+                await self._play_one(wav)
+        except (ValueError, OSError, RuntimeError) as exc:
+            Logger.warning(f'Audio speech failed: {exc}')
+
+    async def prepare(self):
+        module = module_audio.instance()
+        language = self.param_val('lang')
+        if language not in VOICES:
+            raise ValueError('Unsupported speech language')
+        backend = module.get_config_val('audio_tts_backend') or 'espeak'
+        if backend == 'piper':
+            binary = module.get_config_val('audio_piper_binary')
+            model_key = f'audio_piper_model_{language}'
+            model = module.get_config_val(model_key) if module.config_column(model_key) else None
+            if not binary or not model:
+                raise ValueError(f'Piper executable or {language} model is not configured')
+            command = [binary, '--model', model, '--output-raw']
+        elif backend == 'espeak':
+            command = ['espeak-ng', '-v', VOICES[language], '--stdout', '--stdin']
+        else:
+            raise ValueError('Unsupported speech backend')
+        voice = await asyncio.create_subprocess_exec(
+            *command, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL)
+        try:
+            wav, _ = await voice.communicate(self.param_val('text').encode('utf-8'))
+            if voice.returncode:
+                raise RuntimeError('Speech synthesis failed')
+            return piper_pcm_to_wav(wav, model) if backend == 'piper' else wav
+        finally:
+            if voice.returncode is None:
+                try:
+                    voice.terminate()
+                    await voice.wait()
+                except ProcessLookupError:
+                    pass
+
+    async def _play_one(self, prepared=None):
         if Application.IS_DOG:
             speech_id = uuid4().hex
             started = False
@@ -76,32 +119,7 @@ class ipc_say(Method):
                 target = module.cfg_output_device()
                 if not target:
                     raise ValueError('Audio output device is not configured')
-                language = self.param_val('lang')
-                if language not in VOICES:
-                    raise ValueError('Unsupported speech language')
-                backend = module.get_config_val('audio_tts_backend') or 'espeak'
-                if backend == 'piper':
-                    binary = module.get_config_val('audio_piper_binary')
-                    model_key = f'audio_piper_model_{language}'
-                    model = module.get_config_val(model_key) if module.config_column(model_key) else None
-                    if not binary or not model:
-                        raise ValueError(f'Piper executable or {language} model is not configured')
-                    command = [binary, '--model', model, '--output-raw']
-                elif backend == 'espeak':
-                    command = ['espeak-ng', '-v', VOICES[language], '--stdout', '--stdin']
-                else:
-                    raise ValueError('Unsupported speech backend')
-                voice = await asyncio.create_subprocess_exec(
-                    *command,
-                    stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.DEVNULL)
-                process = voice
-                wav, _ = await voice.communicate(self.param_val('text').encode('utf-8'))
-                process = None
-                if voice.returncode:
-                    raise RuntimeError('Speech synthesis failed')
-                if backend == 'piper':
-                    wav = piper_pcm_to_wav(wav, model)
+                wav = prepared if prepared is not None else await self.prepare()
                 player_command = audio_session_command(
                     ['paplay', '--device', target, '--stream-name', 'mira-voice',
                      '--volume', str(speech_volume(module.get_config_val('audio_speech_volume')))],
