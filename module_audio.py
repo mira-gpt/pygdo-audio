@@ -8,6 +8,7 @@ from gdo.core.GDT_User import GDT_User
 from gdo.core.GDT_Bool import GDT_Bool
 from gdo.core.GDT_Enum import GDT_Enum
 from gdo.core.GDT_UInt import GDT_UInt
+from gdo.core.GDT_Percent import GDT_Percent
 
 from typing import TYPE_CHECKING
 
@@ -27,6 +28,7 @@ class module_audio(GDO_Module):
         return [
             GDT_String('audio_output_device').maxlen(255).tooltip('tt_audio_output_device'),
             GDT_String('audio_output_session_user').ascii().maxlen(32).tooltip('tt_audio_output_session_user'),
+            GDT_Percent('audio_speech_volume').label('cfg_audio_speech_volume').min(0).max(100).not_null().initial('80').tooltip('tt_audio_speech_volume'),
             GDT_Enum('audio_tts_backend').choices({'espeak': 'eSpeak NG', 'piper': 'Piper'}).not_null().initial('espeak').tooltip('tt_audio_tts_backend'),
             GDT_String('audio_piper_binary').maxlen(512).tooltip('tt_audio_piper_binary'),
             GDT_String('audio_piper_model_de').maxlen(512).tooltip('tt_audio_piper_model_de'),
