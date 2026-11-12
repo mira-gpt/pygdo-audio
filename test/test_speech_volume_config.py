@@ -15,3 +15,4 @@ class SpeechVolumeConfigTest(unittest.TestCase):
         self.assertEqual('80', volume.get_initial())
         self.assertEqual(0, volume._min)
         self.assertEqual(100, volume._max)
+        self.assertEqual('0', fields['audio_announce_songs'].get_initial())

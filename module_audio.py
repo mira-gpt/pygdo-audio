@@ -29,6 +29,7 @@ class module_audio(GDO_Module):
             GDT_String('audio_output_device').maxlen(255).tooltip('tt_audio_output_device'),
             GDT_String('audio_output_session_user').ascii().maxlen(32).tooltip('tt_audio_output_session_user'),
             GDT_Percent('audio_speech_volume').label('cfg_audio_speech_volume').min(0).max(100).not_null().initial('80').tooltip('tt_audio_speech_volume'),
+            GDT_Bool('audio_announce_songs').not_null().initial('0').tooltip('tt_audio_announce_songs'),
             GDT_Enum('audio_tts_backend').choices({'espeak': 'eSpeak NG', 'piper': 'Piper'}).not_null().initial('espeak').tooltip('tt_audio_tts_backend'),
             GDT_String('audio_piper_binary').maxlen(512).tooltip('tt_audio_piper_binary'),
             GDT_String('audio_piper_model_de').maxlen(512).tooltip('tt_audio_piper_model_de'),
