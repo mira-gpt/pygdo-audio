@@ -2,10 +2,10 @@ import unittest
 import asyncio
 import io
 import wave
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 from gdo.audio.method.say import say
-from gdo.audio.method.ipc_say import ipc_say
+from gdo.audio.method.ipc_say import ipc_say, speech_volume
 from gdo.base.Application import Application
 from gdo.base.Render import Mode
 
@@ -55,8 +55,17 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
                 patch('gdo.audio.method.ipc_say.audio_session_command', return_value=['session-player']) as session, \
                 patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]) as spawn:
             await method.play()
-        session.assert_called_once_with(['paplay', '--device', 'sink', '--stream-name', 'mira-voice'], 'gizmore')
+        session.assert_called_once_with(['paplay', '--device', 'sink', '--stream-name', 'mira-voice', '--volume', '52429'], 'gizmore')
         self.assertEqual('session-player', spawn.await_args_list[1].args[0])
+
+    def test_speech_volume_percentage(self):
+        self.assertEqual(0, speech_volume('0'))
+        self.assertEqual(52429, speech_volume('80'))
+        self.assertEqual(65536, speech_volume('100'))
+        self.assertEqual(52429, speech_volume(None))
+        for value in ('-1', '101', 'nan'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                speech_volume(value)
 
     def test_command_queues_text(self):
         method = say()
@@ -135,7 +144,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         method.param_val = MagicMock(side_effect=lambda key: {'text': 'Hallo!', 'lang': 'de'}[key])
         method.empty = MagicMock()
         voice, player = MagicMock(), MagicMock()
-        voice.communicate = AsyncMock(return_value=(b'wav', b''))
+        voice.communicate = AsyncMock(return_value=(b'\x01\x00' * 100, b''))
         player.communicate = AsyncMock(return_value=(None, None))
         voice.returncode = player.returncode = 0
         module = MagicMock()
@@ -145,10 +154,13 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
             'audio_piper_model_de': '/opt/de.onnx'}.get(key)
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
+                patch('builtins.open', mock_open(read_data='{"audio": {"sample_rate": 22050}}')), \
                 patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, side_effect=[voice, player]) as spawn:
             await method.play()
-        self.assertEqual(('/opt/piper', '--model', '/opt/de.onnx', '--output-file', '-'), spawn.call_args_list[0].args)
-        player.communicate.assert_awaited_once_with(b'wav')
+        self.assertEqual(('/opt/piper', '--model', '/opt/de.onnx', '--output-raw'), spawn.call_args_list[0].args)
+        with wave.open(io.BytesIO(player.communicate.await_args.args[0]), 'rb') as result:
+            self.assertEqual(22050, result.getframerate())
+            self.assertEqual(b'\x01\x00' * 100, result.readframes(100))
 
     async def test_speech_events_bracket_playback(self):
         method = ipc_say()

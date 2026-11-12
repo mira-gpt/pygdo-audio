@@ -1,4 +1,8 @@
 import asyncio
+import io
+import json
+import math
+import wave
 from uuid import uuid4
 
 from gdo.audio.module_audio import module_audio
@@ -11,6 +15,34 @@ from gdo.base.Application import Application
 from gdo.base.Logger import Logger
 from gdo.base.Method import Method
 from gdo.core.GDT_String import GDT_String
+
+
+def piper_pcm_to_wav(pcm: bytes, model: str) -> bytes:
+    """Wrap Piper's raw mono PCM in memory for playback and the duck envelope."""
+    if not pcm or len(pcm) % 2:
+        raise ValueError('Piper returned empty or invalid audio')
+    with open(f'{model}.json', encoding='utf-8') as config_file:
+        try:
+            rate = json.load(config_file)['audio']['sample_rate']
+        except (KeyError, TypeError) as error:
+            raise ValueError('Missing Piper sample rate') from error
+    if type(rate) is not int or not 8000 <= rate <= 192000:
+        raise ValueError('Invalid Piper sample rate')
+    output = io.BytesIO()
+    with wave.open(output, 'wb') as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(rate)
+        wav.writeframes(pcm)
+    return output.getvalue()
+
+
+def speech_volume(value) -> int:
+    """Convert a configured percentage to PulseAudio's 0..65536 scale."""
+    percent = float(value if value is not None and value != '' else 80)
+    if not math.isfinite(percent) or not 0 <= percent <= 100:
+        raise ValueError('Invalid speech volume')
+    return round(percent * 65536 / 100)
 
 
 class ipc_say(Method):
@@ -54,7 +86,7 @@ class ipc_say(Method):
                     model = module.get_config_val(model_key) if module.config_column(model_key) else None
                     if not binary or not model:
                         raise ValueError(f'Piper executable or {language} model is not configured')
-                    command = [binary, '--model', model, '--output-file', '-']
+                    command = [binary, '--model', model, '--output-raw']
                 elif backend == 'espeak':
                     command = ['espeak-ng', '-v', VOICES[language], '--stdout', '--stdin']
                 else:
@@ -68,8 +100,11 @@ class ipc_say(Method):
                 process = None
                 if voice.returncode:
                     raise RuntimeError('Speech synthesis failed')
+                if backend == 'piper':
+                    wav = piper_pcm_to_wav(wav, model)
                 player_command = audio_session_command(
-                    ['paplay', '--device', target, '--stream-name', 'mira-voice'],
+                    ['paplay', '--device', target, '--stream-name', 'mira-voice',
+                     '--volume', str(speech_volume(module.get_config_val('audio_speech_volume')))],
                     module.get_config_val('audio_output_session_user') or None)
                 player = await asyncio.create_subprocess_exec(
                     *player_command,
