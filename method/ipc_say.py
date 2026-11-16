@@ -2,6 +2,7 @@ import asyncio
 import io
 import json
 import math
+import re
 import wave
 from uuid import uuid4
 
@@ -96,7 +97,9 @@ class ipc_say(Method):
             *command, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL)
         try:
-            wav, _ = await voice.communicate(self.param_val('text').encode('utf-8'))
+            # Change only the spoken text; captions and stored messages stay intact.
+            spoken = re.sub(r'\s*:\*\s*', ' kisses ', self.param_val('text'))
+            wav, _ = await voice.communicate(spoken.encode('utf-8'))
             if voice.returncode:
                 raise RuntimeError('Speech synthesis failed')
             return piper_pcm_to_wav(wav, model) if backend == 'piper' else wav

@@ -14,6 +14,17 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         Application.mode(Mode.render_cli)
 
+    async def test_kiss_emoticon_is_spoken_instead_of_punctuation(self):
+        method = ipc_say()
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'Love you :*', 'lang': 'en'}[key])
+        voice = MagicMock(returncode=0, communicate=AsyncMock(return_value=(b'wav', b'')))
+        module = MagicMock()
+        module.get_config_val.return_value = 'espeak'
+        with patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
+                patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, return_value=voice):
+            await method.prepare()
+        voice.communicate.assert_awaited_once_with(b'Love you kisses ')
+
     async def test_speech_requests_play_in_order(self):
         first_started = asyncio.Event()
         release_first = asyncio.Event()
