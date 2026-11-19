@@ -291,6 +291,9 @@ and future SIP integrations. The current local voice prototype uses
 Piper executable and language-specific ONNX model paths. Other speech paths
 are not yet unified (TODO). Piper and each voice have their own licensing;
 verify the selected model before distribution.
+Swedish (`sv`) speech can use `audio_piper_model_sv`; the official
+`sv_SE-nst-medium` voice model card identifies Swedish and lists its dataset as
+CC0: https://huggingface.co/rhasspy/piper-voices/tree/main/sv/sv_SE/nst/medium.
 
 Set `audio_output_device` to the intended PulseAudio/PipeWire sink, then use:
 
@@ -306,7 +309,8 @@ remixes/SID playback and video-zap audio. It does not stop unrelated desktop
 audio, microphone capture, or the visual video effect. A queued reply does not
 confirm that all playback has already stopped.
 `$audio.language de` selects German microphone transcription; `en`, `ko`, `vi`,
-`ja`, `sq`, and `ru` select English, Korean, Vietnamese, Japanese, Albanian, and Russian. The local Whisper
+`ja`, `sq`, `ru`, `ar`, and `sv` select English, Korean, Vietnamese, Japanese,
+Albanian, Russian, Arabic, and Swedish. The local Whisper
 `base` model is multilingual; recognition quality depends on the language and
 audio. This microphone setting is module-wide and defaults to English.
 
