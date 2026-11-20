@@ -9,7 +9,7 @@ class tts(Method):
         return 'owner'
 
     def gdo_parameters(self):
-        return [GDT_Enum('backend').choices({'espeak': 'eSpeak NG', 'piper': 'Piper'}).not_null().positional().tooltip('tt_audio_tts_backend'),
+        return [GDT_Enum('backend').choices({'espeak': 'eSpeak NG', 'piper': 'Piper', 'edge': 'Edge TTS'}).not_null().positional().tooltip('tt_audio_tts_backend'),
                 GDT_String('binary').maxlen(512).tooltip('tt_audio_piper_binary'),
                 GDT_String('model_de').maxlen(512).tooltip('tt_audio_piper_model_de'),
                 GDT_String('model_en').maxlen(512).tooltip('tt_audio_piper_model_en'),

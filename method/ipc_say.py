@@ -17,6 +17,58 @@ from gdo.base.Logger import Logger
 from gdo.base.Method import Method
 from gdo.core.GDT_String import GDT_String
 
+EDGE_VOICES = {
+    'en': 'en-US-AriaNeural', 'de': 'de-DE-KatjaNeural',
+    'ko': 'ko-KR-SunHiNeural', 'vi': 'vi-VN-HoaiMyNeural',
+    'ja': 'ja-JP-NanamiNeural', 'sq': 'sq-AL-AnilaNeural',
+    'ru': 'ru-RU-SvetlanaNeural', 'ar': 'ar-EG-SalmaNeural',
+    'sv': 'sv-SE-SofieNeural',
+}
+
+
+def pcm_to_wav(pcm: bytes, rate: int) -> bytes:
+    if not pcm or len(pcm) % 2:
+        raise ValueError('Speech synthesis returned empty or invalid audio')
+    output = io.BytesIO()
+    with wave.open(output, 'wb') as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(rate)
+        wav.writeframes(pcm)
+    return output.getvalue()
+
+
+async def edge_speech_to_wav(text: str, voice_name: str) -> bytes:
+    try:
+        import edge_tts
+        audio = bytearray()
+        async with asyncio.timeout(30):
+            async for chunk in edge_tts.Communicate(text, voice_name).stream():
+                if chunk['type'] == 'audio':
+                    audio.extend(chunk['data'])
+        if not audio:
+            raise ValueError('Edge TTS returned no audio')
+    except (ImportError, TimeoutError) as error:
+        raise RuntimeError('Edge TTS is unavailable or timed out') from error
+    except Exception as error:
+        raise RuntimeError('Edge TTS synthesis failed') from error
+    decoder = await asyncio.create_subprocess_exec(
+        'ffmpeg', '-v', 'error', '-i', 'pipe:0', '-f', 's16le', '-ac', '1',
+        '-ar', '24000', 'pipe:1', stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
+    try:
+        pcm, _ = await decoder.communicate(bytes(audio))
+        if decoder.returncode:
+            raise RuntimeError('Edge TTS audio decoding failed')
+        return pcm_to_wav(pcm, 24000)
+    finally:
+        if decoder.returncode is None:
+            try:
+                decoder.terminate()
+                await decoder.wait()
+            except ProcessLookupError:
+                pass
+
 
 def piper_pcm_to_wav(pcm: bytes, model: str) -> bytes:
     """Wrap Piper's raw mono PCM in memory for playback and the duck envelope."""
@@ -29,13 +81,7 @@ def piper_pcm_to_wav(pcm: bytes, model: str) -> bytes:
             raise ValueError('Missing Piper sample rate') from error
     if type(rate) is not int or not 8000 <= rate <= 192000:
         raise ValueError('Invalid Piper sample rate')
-    output = io.BytesIO()
-    with wave.open(output, 'wb') as wav:
-        wav.setnchannels(1)
-        wav.setsampwidth(2)
-        wav.setframerate(rate)
-        wav.writeframes(pcm)
-    return output.getvalue()
+    return pcm_to_wav(pcm, rate)
 
 
 def speech_volume(value) -> int:
@@ -82,6 +128,10 @@ class ipc_say(Method):
         if language not in VOICES:
             raise ValueError('Unsupported speech language')
         backend = module.get_config_val('audio_tts_backend') or 'espeak'
+        spoken = re.sub(r'\s*:\*\s*', ' kisses ', self.param_val('text'))
+        if backend == 'edge':
+            voice_name = module.get_config_val('audio_edge_voice') or EDGE_VOICES[language]
+            return await edge_speech_to_wav(spoken, voice_name)
         if backend == 'piper':
             binary = module.get_config_val('audio_piper_binary')
             model_key = f'audio_piper_model_{language}'
@@ -98,7 +148,6 @@ class ipc_say(Method):
             stderr=asyncio.subprocess.DEVNULL)
         try:
             # Change only the spoken text; captions and stored messages stay intact.
-            spoken = re.sub(r'\s*:\*\s*', ' kisses ', self.param_val('text'))
             wav, _ = await voice.communicate(spoken.encode('utf-8'))
             if voice.returncode:
                 raise RuntimeError('Speech synthesis failed')

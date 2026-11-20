@@ -291,6 +291,13 @@ and future SIP integrations. The current local voice prototype uses
 Piper executable and language-specific ONNX model paths. Other speech paths
 are not yet unified (TODO). Piper and each voice have their own licensing;
 verify the selected model before distribution.
+
+The optional `edge` speech backend uses the `edge-tts` package and sends the
+spoken text to Microsoft's online service; it requires network access and
+FFmpeg. Select it with `$audio.tts edge`. Language-specific default voices
+are used unless `audio_edge_voice` is set to a specific Edge voice name.
+Generated audio is decoded in memory for the existing playback and animation
+path. Service errors are reported without falling back to another provider.
 Swedish (`sv`) speech can use `audio_piper_model_sv`; the official
 `sv_SE-nst-medium` voice model card identifies Swedish and lists its dataset as
 CC0: https://huggingface.co/rhasspy/piper-voices/tree/main/sv/sv_SE/nst/medium.
