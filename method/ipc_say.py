@@ -101,7 +101,7 @@ class ipc_say(Method):
         return ''
 
     def gdo_parameters(self):
-        return [GDT_String('text').not_null().maxlen(300).positional(),
+        return [GDT_String('text').not_null().maxlen(4096).positional(),
                 GDT_String('lang').not_null().positional()]
 
     async def gdo_execute(self):
@@ -111,7 +111,15 @@ class ipc_say(Method):
 
     async def play(self):
         async with self._speech_lock:
-            await self._play_one()
+            from gdo.audio.SpeechChunks import playback_chunks
+            text = self.param_val('text')
+            if len(text) <= 300:
+                await self._play_one()
+            else:
+                language = self.param_val('lang')
+                for chunk in playback_chunks(text):
+                    speech = ipc_say().input('text', chunk).input('lang', language)
+                    await speech._play_one()
 
     async def play_prefetched(self, previous=None):
         try:

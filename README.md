@@ -172,6 +172,9 @@ the output's audio session are required.
 `$audio.jingle duck` plays the local synthesized duck jingle if installed.
 `$audio.say <text>` queues local speech using espeak-ng and the same sink.
 The short trigger is `$spk <text>`.
+One request accepts up to 4096 UTF-8 bytes. Long requests are transferred in
+bounded IPC pieces, reassembled, and spoken in order in shorter segments using
+the same selected language. A queued response does not confirm playback.
 
 Create one normal PyGDO audio connector server per independent input/output
 pair:

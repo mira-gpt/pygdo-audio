@@ -75,7 +75,7 @@ audio_jingle_queued = "Jingle queued for Dog."
 audio_jingle_error = "Jingle error: %s"
 mt_audio_say = "Speak text"
 md_audio_say = "Speak text locally using the configured audio output."
-tt_audio_say_text = "Text for local speech synthesis, up to 300 characters."
+tt_audio_say_text = "Text for local speech synthesis, up to 4096 UTF-8 bytes."
 audio_say_queued = "Speech queued for Dog."
 audio_stop_queued = "Audio stop queued for Dog."
 

@@ -30,6 +30,8 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         release_first = asyncio.Event()
         order = []
         first, second = ipc_say(), ipc_say()
+        first.param_val = MagicMock(return_value='first')
+        second.param_val = MagicMock(return_value='second')
 
         async def play_first():
             order.append('first start')
@@ -144,7 +146,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
 
     def test_dog_still_reports_speech_errors(self):
         method = say()
-        method.param_val = MagicMock(side_effect=lambda key: {'text': 'x' * 301, 'lang': 'en'}[key])
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'x' * 4097, 'lang': 'en'}[key])
         method.err = MagicMock(return_value='rejected')
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.audio.method.say.IPC.send_to_dog') as send:
@@ -153,7 +155,7 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
 
     def test_overlong_speech_is_rejected(self):
         method = say()
-        method.param_val = MagicMock(side_effect=lambda key: {'text': 'x' * 301, 'lang': 'de'}[key])
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'x' * 4097, 'lang': 'de'}[key])
         method.err = MagicMock(return_value='rejected')
         with patch('gdo.audio.method.say.IPC.send_to_dog') as send:
             self.assertEqual('rejected', method.gdo_execute())
