@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 
 class module_audio(GDO_Module):
+    gdo_compact_text_help = True
 
     def gdo_classes(self) -> list[type[GDO]]:
         return []
