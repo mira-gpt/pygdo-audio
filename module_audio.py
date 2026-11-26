@@ -43,6 +43,7 @@ class module_audio(GDO_Module):
             GDT_String('audio_piper_model_ru').maxlen(512).tooltip('tt_audio_piper_model_ru'),
             GDT_String('audio_piper_model_ar').maxlen(512).tooltip('tt_audio_piper_model_ar'),
             GDT_String('audio_piper_model_sv').maxlen(512).tooltip('tt_audio_piper_model_sv'),
+            GDT_String('audio_piper_model_fr').maxlen(512).tooltip('tt_audio_piper_model_fr'),
             GDT_User('audio_operator').tooltip('tt_audio_operator'),
             GDT_Bool('audio_microphone').not_null().initial('0').tooltip('tt_audio_microphone'),
             GDT_String('audio_microphone_session_user').ascii().maxlen(32).tooltip('tt_audio_microphone_session_user'),

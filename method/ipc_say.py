@@ -23,6 +23,7 @@ EDGE_VOICES = {
     'ja': 'ja-JP-NanamiNeural', 'sq': 'sq-AL-AnilaNeural',
     'ru': 'ru-RU-SvetlanaNeural', 'ar': 'ar-EG-SalmaNeural',
     'sv': 'sv-SE-SofieNeural',
+    'fr': 'fr-FR-DeniseNeural',
 }
 
 

@@ -1,5 +1,5 @@
-VOICES = {'en': 'en-us+f3', 'de': 'de+f3', 'ko': 'ko', 'vi': 'vi', 'ja': 'ja', 'sq': 'sq', 'ru': 'ru', 'ar': 'ar', 'sv': 'sv'}
-LANGUAGES = {'en': 'English', 'de': 'Deutsch', 'ko': '한국어', 'vi': 'Tiếng Việt', 'ja': '日本語', 'sq': 'Shqip', 'ru': 'Русский', 'ar': 'العربية', 'sv': 'Svenska'}
+VOICES = {'en': 'en-us+f3', 'de': 'de+f3', 'ko': 'ko', 'vi': 'vi', 'ja': 'ja', 'sq': 'sq', 'ru': 'ru', 'ar': 'ar', 'sv': 'sv', 'fr': 'fr'}
+LANGUAGES = {'en': 'English', 'de': 'Deutsch', 'ko': '한국어', 'vi': 'Tiếng Việt', 'ja': '日本語', 'sq': 'Shqip', 'ru': 'Русский', 'ar': 'العربية', 'sv': 'Svenska', 'fr': 'Français'}
 
 
 def whisper_languages():

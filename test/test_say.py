@@ -221,6 +221,23 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.startswith(b'RIFF'))
         self.assertEqual(('/opt/piper', '--model', '/opt/sv.onnx', '--output-raw'), spawn.call_args.args)
 
+    async def test_piper_selects_french_model(self):
+        method = ipc_say()
+        method.param_val = MagicMock(side_effect=lambda key: {'text': 'Bonjour!', 'lang': 'fr'}[key])
+        voice = MagicMock()
+        voice.communicate = AsyncMock(return_value=(b'\x01\x00' * 100, b''))
+        voice.returncode = 0
+        module = MagicMock()
+        module.get_config_val.side_effect = lambda key: {
+            'audio_tts_backend': 'piper', 'audio_piper_binary': '/opt/piper',
+            'audio_piper_model_fr': '/opt/fr.onnx'}.get(key)
+        with patch('gdo.audio.method.ipc_say.module_audio.instance', return_value=module), \
+                patch('builtins.open', mock_open(read_data='{"audio": {"sample_rate": 22050}}')), \
+                patch('gdo.audio.method.ipc_say.asyncio.create_subprocess_exec', new_callable=AsyncMock, return_value=voice) as spawn:
+            result = await method.prepare()
+        self.assertTrue(result.startswith(b'RIFF'))
+        self.assertEqual(('/opt/piper', '--model', '/opt/fr.onnx', '--output-raw'), spawn.call_args.args)
+
     async def test_speech_events_bracket_playback(self):
         method = ipc_say()
         method.param_val = MagicMock(side_effect=lambda key: {'text': 'Hello', 'lang': 'en'}[key])

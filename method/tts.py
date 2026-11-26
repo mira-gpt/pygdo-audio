@@ -15,11 +15,12 @@ class tts(Method):
                 GDT_String('model_en').maxlen(512).tooltip('tt_audio_piper_model_en'),
                 GDT_String('model_ru').maxlen(512).tooltip('tt_audio_piper_model_ru'),
                 GDT_String('model_ar').maxlen(512).tooltip('tt_audio_piper_model_ar'),
-                GDT_String('model_sv').maxlen(512).tooltip('tt_audio_piper_model_sv')]
+                GDT_String('model_sv').maxlen(512).tooltip('tt_audio_piper_model_sv'),
+                GDT_String('model_fr').maxlen(512).tooltip('tt_audio_piper_model_fr')]
 
     async def gdo_execute(self):
         module = module_audio.instance()
-        for key in ('binary', 'model_de', 'model_en', 'model_ru', 'model_ar', 'model_sv'):
+        for key in ('binary', 'model_de', 'model_en', 'model_ru', 'model_ar', 'model_sv', 'model_fr'):
             value = self.param_val(key)
             if value:
                 await module.save_config_val('audio_piper_' + key, value)
