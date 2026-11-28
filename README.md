@@ -164,6 +164,20 @@ It loads Whisper only when called. The helper does not start a listener,
 select an audio device, record audio, or send the event on its own. The caller
 chooses the emitter that forwards the event into PyGDO.
 
+## Offline Qwen trial
+
+From the PyGDO checkout, use a Python environment with PyTorch, NumPy and
+Transformers 5.13 or later, plus `ffmpeg` on PATH:
+
+```sh
+python -m gdo.audio.qwen_asr /path/to/clip.wav --language de --threads 2
+```
+
+The command uses local Qwen3-ASR weights in
+`~/models/Qwen3-ASR-1.7B-hf` by default (`--model` overrides the directory).
+It prints the transcript without starting the microphone, sending chat
+messages, or switching the live Whisper backend.
+
 ## Planned commands
 
 `$audio.jingle v8` queues `jingles/v8.mp3` for playback on the configured
